@@ -1,0 +1,18 @@
+# Environment / secrets
+.env
+.env.*
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+server-out.log
+server-err.log
+
+# Cache files
+tle-cache.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WorldView</title>
+
+  <!-- Cesium.js — 3D globe engine -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet"/>
+
+  <!-- satellite.js — orbital mechanics math -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
+
+  <link rel="icon" href="data:,"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ── HUD Header ─────────────────────────────────── -->
+  <header class="hud-header">
+    <div class="logo">
+      <span class="logo-bracket">[</span>
+      WORLD<span class="logo-accent">VIEW</span>
+      <span class="logo-bracket">]</span>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-block">
+        <span class="stat-label">MIL AC</span>
+        <span class="stat-value" id="flight-count">--</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">SATS</span>
+        <span class="stat-value" id="sat-count">--</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">ISS ALT</span>
+        <span class="stat-value" id="iss-alt">--</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">ISS SPEED</span>
+        <span class="stat-value" id="iss-speed">--</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-label">UTC</span>
+        <span class="stat-value" id="utc-clock">--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Control Panel ──────────────────────────────── -->
+  <aside class="control-panel">
+    <div class="panel-section">
+      <div class="panel-title">LAYERS</div>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-flights" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Military Aircraft</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-iss" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>ISS Position</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-satellites" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Satellites</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-borders" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Country Borders</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-cities" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Cities / CCTV</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-gps-jamming" checked/>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>GPS Blocking</span>
+      </label>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">FOCUS REGION</div>
+      <button class="mode-btn" data-region="world">🌍 GLOBAL</button>
+      <button class="mode-btn" data-region="mideast">MIDDLE EAST</button>
+      <button class="mode-btn" data-region="europe">EUROPE</button>
+      <button class="mode-btn" data-region="eastasia">EAST ASIA</button>
+      <button class="mode-btn" data-region="northam">N. AMERICA</button>
+      <button class="mode-btn" data-region="africa">AFRICA</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">VIEW MODE</div>
+      <button class="mode-btn active" data-mode="default">STANDARD</button>
+      <button class="mode-btn" data-mode="night">NIGHT</button>
+      <button class="mode-btn" data-mode="terrain">TERRAIN</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">REFRESH</div>
+      <button class="refresh-btn" id="refresh-btn">⟳ REFRESH DATA</button>
+      <div class="last-update" id="last-update">Never</div>
+    </div>
+  </aside>
+
+  <!-- ── Geopolitical Events Panel ────────────────────── -->
+  <aside class="events-panel" id="events-panel">
+    <div class="panel-title">GEOPOLITICAL INTEL</div>
+    <div class="events-controls">
+      <div class="events-control-row events-control-row-4">
+        <button class="events-timeline active" data-timeline="24">24H</button>
+        <button class="events-timeline" data-timeline="168">7D</button>
+        <button class="events-timeline" data-timeline="720">30D</button>
+        <button class="events-timeline" data-timeline="ongoing">ONGOING</button>
+      </div>
+      <div class="events-control-row events-control-row-2">
+        <select id="events-status-filter">
+          <option value="all">All states</option>
+          <option value="new">New</option>
+          <option value="updated">Updated</option>
+          <option value="active">Active</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <select id="events-severity-filter">
+          <option value="1">Severity 1+</option>
+          <option value="2">Severity 2+</option>
+          <option value="3">Severity 3</option>
+        </select>
+      </div>
+      <div class="events-control-row events-control-row-1">
+        <select id="events-type-filter">
+          <option value="all">All types</option>
+        </select>
+      </div>
+      <div class="events-control-row events-control-row-2">
+        <label class="events-alert-toggle">
+          <input type="checkbox" id="events-alerts-enabled" />
+          <span>Alerts</span>
+        </label>
+        <select id="events-alert-severity">
+          <option value="2">Alert Sev 2+</option>
+          <option value="3">Alert Sev 3</option>
+        </select>
+      </div>
+    </div>
+    <div id="events-list"><div class="cctv-loading">Loading events...</div></div>
+    <div class="last-update" id="events-update"></div>
+  </aside>
+
+  <aside class="event-detail-panel" id="event-detail-panel" style="display:none">
+    <div class="event-detail-header">
+      <div class="event-detail-title">EVENT DETAIL</div>
+      <button class="event-detail-close" id="event-detail-close">x</button>
+    </div>
+    <div class="event-detail-body">
+      <div class="event-detail-meta" id="event-detail-meta"></div>
+      <div class="event-detail-summary" id="event-detail-summary"></div>
+      <div class="event-detail-grid">
+        <div class="event-detail-row"><span>Type</span><strong id="event-detail-type">-</strong></div>
+        <div class="event-detail-row"><span>Actors</span><strong id="event-detail-actors">-</strong></div>
+        <div class="event-detail-row"><span>Severity</span><strong id="event-detail-severity">-</strong></div>
+        <div class="event-detail-row"><span>Confidence</span><strong id="event-detail-confidence">-</strong></div>
+        <div class="event-detail-row"><span>Seen</span><strong id="event-detail-seen">-</strong></div>
+        <div class="event-detail-row"><span>Source</span><strong id="event-detail-source">-</strong></div>
+      </div>
+      <button class="event-detail-cctv" id="event-detail-cctv" type="button">Open Nearby CCTV</button>
+      <a class="event-detail-link" id="event-detail-link" href="#" target="_blank" rel="noopener">Open Source Article</a>
+    </div>
+  </aside>
+
+  <div class="alert-toast-wrap" id="alert-toast-wrap"></div>
+
+  <!-- ── Globe ──────────────────────────────────────── -->
+  <div id="cesiumContainer"></div>
+
+  <!-- ── Info Tooltip ───────────────────────────────── -->
+  <div class="info-tooltip" id="info-tooltip" style="display:none">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-body" id="tooltip-body"></div>
+  </div>
+
+  <!-- ── CCTV Modal ─────────────────────────────────── -->
+  <div class="cctv-overlay" id="cctv-overlay" style="display:none">
+    <div class="cctv-modal">
+      <div class="cctv-header">
+        <div class="cctv-title" id="cctv-title">CITY — CCTV</div>
+        <button class="cctv-close" id="cctv-close">✕</button>
+      </div>
+      <div class="cctv-meta" id="cctv-meta"></div>
+      <div class="cctv-grid" id="cctv-grid">
+        <div class="cctv-loading" id="cctv-loading">Loading cameras...</div>
+      </div>
+      <div class="cctv-footer">
+        <span id="cctv-status">—</span>
+        <a class="cctv-external" id="cctv-external" href="#" target="_blank" rel="noopener">
+          Open More ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Status Bar ─────────────────────────────────── -->
+  <footer class="status-bar">
+    <span id="status-msg">Initializing WorldView...</span>
+    <span class="status-right">Data: ADS-B Exchange · CelesTrak · WhereTheISS · TfL JamCams</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
