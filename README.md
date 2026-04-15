@@ -31,6 +31,7 @@ npm start
 
 ## Environment Variables
 - `WINDY_WEBCAMS_KEY` (required for Windy CCTV endpoints)
+- `CESIUM_ION_TOKEN` (required for Cesium world terrain/imagery)
 - `GPS_JAM_URL` (optional)
 - `GPS_JAM_URL_TEMPLATE` (optional)
 - `DEMO_MODE=true` (optional strict mode; requires `WINDY_WEBCAMS_KEY` at startup)

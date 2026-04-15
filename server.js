@@ -35,6 +35,20 @@ app.use(express.json());
 app.use(requestLogger);
 app.use(express.static(path.join(__dirname, 'public')));
 
+const CESIUM_ION_TOKEN = envValue('CESIUM_ION_TOKEN', envFallback);
+if (!CESIUM_ION_TOKEN) {
+  console.warn('Cesium token missing (CESIUM_ION_TOKEN). Globe terrain may be limited.');
+}
+
+app.get('/config.js', (_req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  const cfg = {
+    cesiumIonToken: CESIUM_ION_TOKEN || '',
+  };
+  res.send(`window.WORLDVIEW_CONFIG = ${JSON.stringify(cfg)};`);
+});
+
 app.get('/health', (_req, res) => {
   res.status(200).json({ ok: true, service: 'worldview-app' });
 });

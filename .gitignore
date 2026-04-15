@@ -17,3 +17,6 @@ tle-cache.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Local deployment notes
+AWS_DEMO_DEPLOY.md
