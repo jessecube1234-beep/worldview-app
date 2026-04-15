@@ -1840,13 +1840,52 @@ loadAllData();
 renderEventsLoading();
 fetchGeopolitical({ alerts: false });
 
-// Auto-refresh intervals
-setInterval(fetchISS,                10_000);
-setInterval(updateSatellitePositions,30_000);
-setInterval(fetchFlights,            60_000);
-setInterval(fetchSatellites,      3_600_000);
-setInterval(fetchGpsJamming,        60_000);
-setInterval(() => fetchGeopolitical({ alerts: true }), 900_000);  // every 15 min
+// Auto-refresh cadence is reduced when tab is in background to lower API/load costs.
+const POLL_MS_ACTIVE = {
+  iss: 10_000,
+  satPos: 30_000,
+  flights: 60_000,
+  satellites: 3_600_000,
+  gps: 60_000,
+  events: 900_000,
+};
+const POLL_MS_HIDDEN = {
+  iss: 30_000,
+  satPos: 60_000,
+  flights: 300_000,
+  satellites: 3_600_000,
+  gps: 300_000,
+  events: 1_800_000,
+};
+
+const pollTimers = [];
+
+function clearPollTimers() {
+  while (pollTimers.length) clearInterval(pollTimers.pop());
+}
+
+function startPollTimers() {
+  clearPollTimers();
+  const cadence = document.hidden ? POLL_MS_HIDDEN : POLL_MS_ACTIVE;
+  pollTimers.push(setInterval(fetchISS, cadence.iss));
+  pollTimers.push(setInterval(updateSatellitePositions, cadence.satPos));
+  pollTimers.push(setInterval(fetchFlights, cadence.flights));
+  pollTimers.push(setInterval(fetchSatellites, cadence.satellites));
+  pollTimers.push(setInterval(fetchGpsJamming, cadence.gps));
+  pollTimers.push(setInterval(() => fetchGeopolitical({ alerts: true }), cadence.events));
+}
+
+document.addEventListener('visibilitychange', () => {
+  startPollTimers();
+  if (!document.hidden) {
+    fetchISS();
+    fetchFlights();
+    fetchGpsJamming();
+    fetchGeopolitical({ alerts: false });
+  }
+});
+
+startPollTimers();
 
 
 
