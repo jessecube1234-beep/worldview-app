@@ -1,4 +1,7 @@
-require('dotenv').config();
+try {
+  // Optional in production (Elastic Beanstalk injects env vars directly).
+  require('dotenv').config();
+} catch (_) {}
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
