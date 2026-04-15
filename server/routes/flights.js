@@ -1,10 +1,13 @@
 function registerFlightRoutes(app, deps) {
   const { fetchWithTimeout, HEADERS } = deps;
   const FLIGHT_CACHE_TTL = 60 * 1000;
+  const ADSB_TIMEOUT_MS = 6500;
+  const OPENSKY_TIMEOUT_MS = 3500;
 
   let flightsCache = null;
 
   let flightsCacheTime = 0;
+  let flightsRefreshInFlight = null;
 
   
 
@@ -134,114 +137,86 @@ function registerFlightRoutes(app, deps) {
 
   
 
-  app.get('/api/flights', async (_req, res) => {
+  async function refreshFlights(now = Date.now()) {
+    const [milResult, laddResult, openskyResult] = await Promise.allSettled([
+      fetchWithTimeout('https://api.adsb.lol/v2/mil',  { headers: HEADERS, timeout: ADSB_TIMEOUT_MS }),
+      fetchWithTimeout('https://api.adsb.lol/v2/ladd', { headers: HEADERS, timeout: ADSB_TIMEOUT_MS }),
+      fetchWithTimeout('https://opensky-network.org/api/states/all', { headers: HEADERS, timeout: OPENSKY_TIMEOUT_MS }),
+    ]);
 
-    const now = Date.now();
+    const combined = new Map();
+    let milCount = 0;
+    let laddCount = 0;
+    let openskyAdded = 0;
 
-    if (flightsCache && now - flightsCacheTime < FLIGHT_CACHE_TTL) {
-
-      return res.json({ ac: flightsCache });
-
+    for (const [idx, result] of [milResult, laddResult].entries()) {
+      if (result.status !== 'fulfilled' || !result.value.ok) continue;
+      const data = await result.value.json();
+      for (const p of (data.ac || [])) {
+        if (p.lat != null && p.lon != null && !combined.has(p.hex)) {
+          combined.set(p.hex, p);
+          if (idx === 0) milCount++;
+          else laddCount++;
+        }
+      }
     }
 
-  
+    if (openskyResult.status === 'fulfilled' && openskyResult.value.ok) {
+      const data = await openskyResult.value.json();
+      const mapped = Array.isArray(data?.states)
+        ? data.states.map(openskyToAdsbLike).filter(Boolean)
+        : [];
+      const sampled = pickBalancedOpenSky(mapped);
+      for (const p of sampled) {
+        if (!combined.has(p.hex)) {
+          combined.set(p.hex, p);
+          openskyAdded++;
+        }
+      }
+    }
+
+    const ac = [...combined.values()];
+    if (ac.length) {
+      flightsCache = ac;
+      flightsCacheTime = now;
+    }
+    console.log(`Tracked aircraft: ${ac.length} (mil:${milCount} ladd:${laddCount} global:${openskyAdded})`);
+    return ac;
+  }
+
+  app.get('/api/flights', async (_req, res) => {
+    const now = Date.now();
+    const hasFreshCache = flightsCache && (now - flightsCacheTime < FLIGHT_CACHE_TTL);
+    if (hasFreshCache) return res.json({ ac: flightsCache });
+
+    // Fast path: return stale cache immediately and refresh in background.
+    if (flightsCache && !hasFreshCache) {
+      if (!flightsRefreshInFlight) {
+        flightsRefreshInFlight = refreshFlights(now).catch(err => {
+          console.error('Flight background refresh error:', err.message);
+          return null;
+        }).finally(() => {
+          flightsRefreshInFlight = null;
+        });
+      }
+      return res.json({ ac: flightsCache, stale: true });
+    }
 
     try {
-
-      const [milResult, laddResult, openskyResult] = await Promise.allSettled([
-
-        fetchWithTimeout('https://api.adsb.lol/v2/mil',  { headers: HEADERS, timeout: 15000 }),
-
-        fetchWithTimeout('https://api.adsb.lol/v2/ladd', { headers: HEADERS, timeout: 15000 }),
-
-        fetchWithTimeout('https://opensky-network.org/api/states/all', { headers: HEADERS, timeout: 15000 }),
-
-      ]);
-
-  
-
-      const combined = new Map();
-
-      let milCount = 0;
-
-      let laddCount = 0;
-
-      let openskyAdded = 0;
-
-  
-
-      for (const [idx, result] of [milResult, laddResult].entries()) {
-
-        if (result.status !== 'fulfilled' || !result.value.ok) continue;
-
-        const data = await result.value.json();
-
-        for (const p of (data.ac || [])) {
-
-          if (p.lat != null && p.lon != null && !combined.has(p.hex)) {
-
-            combined.set(p.hex, p);
-
-            if (idx === 0) milCount++;
-
-            else laddCount++;
-
-          }
-
-        }
-
+      if (!flightsRefreshInFlight) {
+        flightsRefreshInFlight = refreshFlights(now).finally(() => {
+          flightsRefreshInFlight = null;
+        });
       }
-
-  
-
-      if (openskyResult.status === 'fulfilled' && openskyResult.value.ok) {
-
-        const data = await openskyResult.value.json();
-
-        const mapped = Array.isArray(data?.states)
-
-          ? data.states.map(openskyToAdsbLike).filter(Boolean)
-
-          : [];
-
-        const sampled = pickBalancedOpenSky(mapped);
-
-        for (const p of sampled) {
-
-          if (!combined.has(p.hex)) {
-
-            combined.set(p.hex, p);
-
-            openskyAdded++;
-
-          }
-
-        }
-
-      }
-
-  
-
-      const ac = [...combined.values()];
-
-      flightsCache = ac;
-
-      flightsCacheTime = now;
-
-      console.log(`Tracked aircraft: ${ac.length} (mil:${milCount} ladd:${laddCount} global:${openskyAdded})`);
-
-      res.json({ ac });
-
+      const ac = await flightsRefreshInFlight;
+      if (Array.isArray(ac) && ac.length) return res.json({ ac });
+      if (flightsCache) return res.json({ ac: flightsCache, stale: true });
+      return res.status(503).json({ error: 'Flight feeds unavailable' });
     } catch (err) {
-
       console.error('Flight fetch error:', err.message);
-
-      if (flightsCache) return res.json({ ac: flightsCache });
-
-      res.status(500).json({ error: err.message });
-
+      if (flightsCache) return res.json({ ac: flightsCache, stale: true });
+      return res.status(500).json({ error: err.message });
     }
-
   });
 
   
