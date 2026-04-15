@@ -103,7 +103,7 @@
 
     <div class="panel-section">
       <div class="panel-title">REFRESH</div>
-      <button class="refresh-btn" id="refresh-btn">⟳ REFRESH DATA</button>
+      <button class="refresh-btn" id="refresh-btn">REFRESH DATA</button>
       <div class="last-update" id="last-update">Never</div>
     </div>
   </aside>
@@ -148,6 +148,7 @@
         </select>
       </div>
     </div>
+    <div class="events-freshness" id="events-freshness">Refreshing...</div>
     <div id="events-list"><div class="cctv-loading">Loading events...</div></div>
     <div class="last-update" id="events-update"></div>
   </aside>
@@ -155,7 +156,7 @@
   <aside class="event-detail-panel" id="event-detail-panel" style="display:none">
     <div class="event-detail-header">
       <div class="event-detail-title">EVENT DETAIL</div>
-      <button class="event-detail-close" id="event-detail-close">x</button>
+      <button class="event-detail-close" id="event-detail-close">X</button>
     </div>
     <div class="event-detail-body">
       <div class="event-detail-meta" id="event-detail-meta"></div>
@@ -168,6 +169,7 @@
         <div class="event-detail-row"><span>Seen</span><strong id="event-detail-seen">-</strong></div>
         <div class="event-detail-row"><span>Source</span><strong id="event-detail-source">-</strong></div>
       </div>
+      <button class="event-detail-pin" id="event-detail-pin" type="button">Pin Event</button>
       <button class="event-detail-cctv" id="event-detail-cctv" type="button">Open Nearby CCTV</button>
       <a class="event-detail-link" id="event-detail-link" href="#" target="_blank" rel="noopener">Open Source Article</a>
     </div>
@@ -198,7 +200,7 @@
       <div class="cctv-footer">
         <span id="cctv-status">—</span>
         <a class="cctv-external" id="cctv-external" href="#" target="_blank" rel="noopener">
-          Open More ↗
+          Open More ->
         </a>
       </div>
     </div>
@@ -207,7 +209,7 @@
   <!-- ── Status Bar ─────────────────────────────────── -->
   <footer class="status-bar">
     <span id="status-msg">Initializing WorldView...</span>
-    <span class="status-right">Data: ADS-B Exchange · CelesTrak · WhereTheISS · TfL JamCams</span>
+    <span class="status-right">Data: ADS-B Exchange | CelesTrak | WhereTheISS | TfL JamCams</span>
   </footer>
 
   <script src="app.js"></script>

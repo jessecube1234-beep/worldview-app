@@ -557,6 +557,23 @@ html, body {
   border-color: var(--green);
   background: rgba(0, 255, 157, 0.08);
 }
+.events-freshness {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.events-freshness.live {
+  border-color: rgba(138, 255, 200, 0.5);
+  color: #8affc8;
+}
+.events-freshness.cached {
+  border-color: rgba(255, 224, 102, 0.45);
+  color: #ffe066;
+}
 
 .event-card {
   display: flex;
@@ -571,8 +588,19 @@ html, body {
 }
 .event-card:hover { border-color: var(--green-dim); background: rgba(0, 0, 0, 0.55); }
 .event-card.active { border-color: var(--green); background: rgba(0, 32, 20, 0.55); }
+.event-card.pinned {
+  border-color: rgba(255, 224, 102, 0.5);
+}
 
 .event-header { display: flex; align-items: center; gap: 7px; }
+.event-pin-badge {
+  font-size: 0.46rem;
+  letter-spacing: 0.12em;
+  color: #ffe066;
+  border: 1px solid rgba(255, 224, 102, 0.35);
+  border-radius: 10px;
+  padding: 1px 5px;
+}
 
 .event-dot {
   width: 7px; height: 7px;
@@ -720,6 +748,58 @@ html, body {
   text-align: left;
 }
 .event-detail-cctv:hover { border-color: var(--green-dim); color: var(--green); }
+.event-detail-pin {
+  border: 1px solid rgba(255, 224, 102, 0.45);
+  background: rgba(40, 30, 0, 0.35);
+  color: #ffe066;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+}
+.event-detail-pin.active {
+  background: rgba(80, 60, 0, 0.45);
+  border-color: rgba(255, 224, 102, 0.8);
+}
+.event-detail-pin:hover { border-color: rgba(255, 224, 102, 0.8); }
+
+.events-empty {
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 12px;
+  line-height: 1.45;
+}
+.events-empty-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.54rem;
+  color: rgba(217, 255, 240, 0.7);
+}
+.events-skeleton {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 8px;
+  background: rgba(0, 0, 0, 0.22);
+  margin-bottom: 6px;
+}
+.events-skeleton-bar {
+  height: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(180, 220, 205, 0.08) 0%, rgba(180, 220, 205, 0.28) 50%, rgba(180, 220, 205, 0.08) 100%);
+  background-size: 220% 100%;
+  animation: eventsShimmer 1.2s linear infinite;
+}
+.events-skeleton-bar + .events-skeleton-bar { margin-top: 6px; }
+.events-skeleton-bar.short { width: 55%; }
+@keyframes eventsShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -20% 0; }
+}
 
 .alert-toast-wrap {
   position: fixed;
@@ -747,6 +827,40 @@ html, body {
 }
 .alert-toast.sev-2 { border-left-color: #ff8c00; }
 .alert-toast.sev-3 { border-left-color: #ff4444; }
+
+@media (max-width: 1280px) {
+  .events-panel {
+    width: 272px;
+    right: 12px;
+    top: 56px;
+    max-height: calc(100vh - 72px);
+  }
+  .event-detail-panel {
+    right: 296px;
+    top: 56px;
+    max-height: calc(100vh - 72px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .events-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    top: auto;
+    bottom: 12px;
+    max-height: 42vh;
+    z-index: 40;
+  }
+  .event-detail-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    top: 12px;
+    max-height: 44vh;
+    z-index: 41;
+  }
+}
 
 /* ── Cesium UI overrides ──────────────────────────────────────────────────── */
 .cesium-widget-credits,

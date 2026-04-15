@@ -54,7 +54,10 @@ const state = {
   gpsJammingEntities: [],
   cameraEntities:   [],
   eventEntities:    [],
+  countryLabelCameraListenerAttached: false,
 };
+let countryLabelUpdatePending = false;
+let countryLabelLastUpdateMs = 0;
 
 // â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const flightCountEl  = document.getElementById('flight-count');
@@ -212,6 +215,187 @@ async function fetchISS() {
 
 // â”€â”€ Country Borders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+function normalizeLonDelta(deg) {
+  let d = deg;
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+  return d;
+}
+
+function lonInRectangle(lonDeg, rect) {
+  const lon = Cesium.Math.toRadians(lonDeg);
+  if (rect.west <= rect.east) return lon >= rect.west && lon <= rect.east;
+  return lon >= rect.west || lon <= rect.east;
+}
+
+const _textImageCache = new Map();
+function textBillboardImage(text, opts = {}) {
+  const label = String(text || '');
+  const font = opts.font || '600 20px "Segoe UI", "Inter", Arial, sans-serif';
+  const color = opts.color || '#2fbf71';
+  const padX = Number.isFinite(opts.padX) ? opts.padX : 8;
+  const height = Number.isFinite(opts.height) ? opts.height : 30;
+  const key = `${label}|${font}|${color}|${padX}|${height}`;
+  if (_textImageCache.has(key)) return _textImageCache.get(key);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.font = font;
+  const width = Math.ceil(ctx.measureText(label).width + padX * 2);
+  canvas.width = width;
+  canvas.height = height;
+  ctx.font = font;
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillText(label, padX, Math.floor(height / 2));
+
+  const image = canvas.toDataURL('image/png');
+  _textImageCache.set(key, image);
+  return image;
+}
+
+function countryTextImage(name) {
+  return textBillboardImage(name, {
+    font: '600 20px "Segoe UI", "Inter", Arial, sans-serif',
+    color: '#2fbf71',
+    padX: 8,
+    height: 30,
+  });
+}
+
+function cityTextImage(name) {
+  return textBillboardImage(name, {
+    font: '600 18px "Segoe UI", "Inter", Arial, sans-serif',
+    color: '#6bd3ff',
+    padX: 7,
+    height: 28,
+  });
+}
+
+function eventTextImage(name) {
+  return textBillboardImage(name, {
+    font: '600 18px "Segoe UI", "Inter", Arial, sans-serif',
+    color: '#ffd166',
+    padX: 7,
+    height: 28,
+  });
+}
+
+function gpsTextImage(name) {
+  return textBillboardImage(name, {
+    font: '600 18px "Segoe UI", "Inter", Arial, sans-serif',
+    color: '#ff6b6b',
+    padX: 7,
+    height: 28,
+  });
+}
+
+const COUNTRY_LABEL_OFFSETS = {
+  'United States': { lon: -3.2, lat: -0.7 },
+  'United States of America': { lon: -3.2, lat: -0.7 },
+  'Canada': { lon: -3.0, lat: -1.0 },
+  'Russian Federation': { lon: -9.0, lat: -0.8 },
+  'Russia': { lon: -9.0, lat: -0.8 },
+  'People\'s Republic of China': { lon: -1.2, lat: 0.4 },
+  'China': { lon: -1.2, lat: 0.4 },
+  'Australia': { lon: 0.2, lat: 0.8 },
+  'Brazil': { lon: -0.8, lat: 0.3 },
+  'India': { lon: -0.5, lat: 0.4 },
+  'Greenland': { lon: -2.0, lat: -0.2 },
+};
+
+function getCountryLabelOffset(name) {
+  return COUNTRY_LABEL_OFFSETS[name] || { lon: 0, lat: 0 };
+}
+
+function countryLabelRuleByHeight(heightMeters) {
+  if (heightMeters > 22_000_000) return { max: 10, minSepDeg: 18 };
+  if (heightMeters > 16_000_000) return { max: 18, minSepDeg: 12 };
+  if (heightMeters > 12_000_000) return { max: 40, minSepDeg: 8 };
+  if (heightMeters > 8_000_000) return { max: 90, minSepDeg: 5.5 };
+  if (heightMeters > 5_000_000) return { max: 160, minSepDeg: 3.5 };
+  return { max: 999, minSepDeg: 0 };
+}
+
+function scheduleCountryLabelVisibilityUpdate(force = false) {
+  const now = Date.now();
+  if (force || now - countryLabelLastUpdateMs >= 90) {
+    countryLabelLastUpdateMs = now;
+    updateCountryLabelVisibility();
+    return;
+  }
+  if (countryLabelUpdatePending) return;
+  countryLabelUpdatePending = true;
+  setTimeout(() => {
+    countryLabelUpdatePending = false;
+    countryLabelLastUpdateMs = Date.now();
+    updateCountryLabelVisibility();
+  }, 95);
+}
+
+function updateCountryLabelVisibility() {
+  if (!state.countryLabelEntities.length) return;
+
+  if (!state.bordersVisible) {
+    state.countryLabelEntities.forEach((ent) => { ent.show = false; });
+    viewer.scene.requestRender();
+    return;
+  }
+
+  const height = viewer.camera.positionCartographic?.height || 0;
+  const rule = countryLabelRuleByHeight(height);
+  const viewRect = viewer.camera.computeViewRectangle(viewer.scene.globe.ellipsoid);
+
+  if (!viewRect) {
+    state.countryLabelEntities.forEach((ent) => { ent.show = false; });
+    viewer.scene.requestRender();
+    return;
+  }
+
+  const labels = [...state.countryLabelEntities]
+    .sort((a, b) => (b._wvPriority || 0) - (a._wvPriority || 0));
+  const accepted = [];
+  const camPos = Cesium.Cartesian3.normalize(
+    viewer.camera.positionWC.clone(),
+    new Cesium.Cartesian3()
+  );
+
+  for (const ent of labels) {
+    const lon = Number(ent._wvLon);
+    const lat = Number(ent._wvLat);
+    ent.show = false;
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+    const unit = ent._wvUnit || Cesium.Cartesian3.normalize(
+      Cesium.Cartesian3.fromDegrees(lon, lat, 0),
+      new Cesium.Cartesian3()
+    );
+    const facing = Cesium.Cartesian3.dot(camPos, unit);
+    if (facing < 0.02) continue;
+    if (lat < Cesium.Math.toDegrees(viewRect.south) || lat > Cesium.Math.toDegrees(viewRect.north)) continue;
+    if (!lonInRectangle(lon, viewRect)) continue;
+    if (accepted.length >= rule.max) continue;
+
+    let tooClose = false;
+    for (const keep of accepted) {
+      const midLatRad = Cesium.Math.toRadians((lat + keep.lat) * 0.5);
+      const lonDelta = Math.abs(normalizeLonDelta(lon - keep.lon)) * Math.cos(midLatRad);
+      const latDelta = Math.abs(lat - keep.lat);
+      const sepDeg = Math.hypot(lonDelta, latDelta);
+      if (sepDeg < rule.minSepDeg) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (tooClose) continue;
+    accepted.push({ lon, lat });
+    ent.show = true;
+  }
+
+  viewer.scene.requestRender();
+}
+
 async function loadCountryBorders() {
   try {
     const res = await fetch('/api/countries');
@@ -257,43 +441,56 @@ async function loadCountryBorders() {
       const positions = hierarchy?.positions || [];
       if (!positions.length) continue;
 
-      const sphere = Cesium.BoundingSphere.fromPoints(positions);
-      const center = sphere.center;
-      const carto = Cesium.Cartographic.fromCartesian(center);
-      if (!carto) continue;
-      const lon = Cesium.Math.toDegrees(carto.longitude);
-      const lat = Cesium.Math.toDegrees(carto.latitude);
+      const rect = Cesium.Rectangle.fromCartesianArray(positions);
+      if (!rect) continue;
+      const center = Cesium.Rectangle.center(rect);
+      if (!center) continue;
+      const baseLon = Cesium.Math.toDegrees(center.longitude);
+      const baseLat = Cesium.Math.toDegrees(center.latitude);
+      const offset = getCountryLabelOffset(name);
+      const lon = normalizeLonDelta(baseLon + offset.lon);
+      const lat = Math.max(-85, Math.min(85, baseLat + offset.lat));
       if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
 
       const prev = bestByCountry.get(name);
-      if (!prev || sphere.radius > prev.radius) {
-        bestByCountry.set(name, { lon, lat, radius: sphere.radius });
+      const priorityRadius = Cesium.BoundingSphere.fromPoints(positions).radius;
+      if (!prev || priorityRadius > prev.radius) {
+        bestByCountry.set(name, { lon, lat, radius: priorityRadius });
       }
     }
 
     for (const [name, pt] of bestByCountry.entries()) {
       const labelEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(pt.lon, pt.lat, 60000),
+        position: Cesium.Cartesian3.fromDegrees(pt.lon, pt.lat, 120000),
         description: JSON.stringify({ type: 'country', name: String(name) }),
-        label: {
-          text: String(name),
-          font: '13px sans-serif',
-          fillColor: Cesium.Color.fromCssColorString('#d9fff0'),
-          outlineColor: Cesium.Color.fromCssColorString('rgba(0,0,0,0.65)'),
-          outlineWidth: 1,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          showBackground: false,
-          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        billboard: {
+          image: countryTextImage(name),
+          scale: 0.6,
           verticalOrigin: Cesium.VerticalOrigin.CENTER,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 35_000_000.0),
-          disableDepthTestDistance: 0,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 20_000_000.0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          heightReference: Cesium.HeightReference.NONE,
         },
         show: state.bordersVisible,
       });
+      labelEntity._wvLon = pt.lon;
+      labelEntity._wvLat = pt.lat;
+      labelEntity._wvPriority = pt.radius;
+      labelEntity._wvUnit = Cesium.Cartesian3.normalize(
+        Cesium.Cartesian3.fromDegrees(pt.lon, pt.lat, 0),
+        new Cesium.Cartesian3()
+      );
       state.countryLabelEntities.push(labelEntity);
     }
 
     console.log(`Country borders loaded. Labels: ${state.countryLabelEntities.length}`);
+    if (!state.countryLabelCameraListenerAttached) {
+      viewer.camera.changed.addEventListener(() => scheduleCountryLabelVisibilityUpdate(false));
+      viewer.camera.moveEnd.addEventListener(() => scheduleCountryLabelVisibilityUpdate(true));
+      state.countryLabelCameraListenerAttached = true;
+    }
+    scheduleCountryLabelVisibilityUpdate(true);
     viewer.scene.requestRender();
 
   } catch (err) {
@@ -389,9 +586,9 @@ const CITIES = [
   { name: 'Toronto',        lat: 43.6532,  lon: -79.3832,  country: 'CA', cam: 'toronto' },
   { name: 'Vancouver',      lat: 49.2827,  lon: -123.1207, country: 'CA', cam: 'vancouver' },
   { name: 'Mexico City',    lat: 19.4326,  lon: -99.1332,  country: 'MX', cam: 'mexico' },
-  { name: 'SÃ£o Paulo',      lat: -23.5505, lon: -46.6333,  country: 'BR', cam: 'saopaulo' },
+  { name: 'Sao Paulo',       lat: -23.5505, lon: -46.6333,  country: 'BR', cam: 'saopaulo' },
   { name: 'Buenos Aires',   lat: -34.6037, lon: -58.3816,  country: 'AR', cam: 'buenosaires' },
-  { name: 'BogotÃ¡',         lat: 4.7110,   lon: -74.0721,  country: 'CO', cam: 'bogota' },
+  { name: 'Bogota',          lat: 4.7110,   lon: -74.0721,  country: 'CO', cam: 'bogota' },
   { name: 'Lima',           lat: -12.0464, lon: -77.0428,  country: 'PE', cam: 'lima' },
   { name: 'Santiago',       lat: -33.4489, lon: -70.6693,  country: 'CL', cam: 'santiago' },
   // Europe
@@ -472,23 +669,26 @@ function loadCities() {
         verticalOrigin: Cesium.VerticalOrigin.CENTER,
         disableDepthTestDistance: 0,
       },
-      label: {
-        text: city.name,
-        font: '10px Courier New',
-        fillColor: Cesium.Color.fromCssColorString('#ffe066'),
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 2,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      show: state.citiesVisible,
+      description: JSON.stringify({ type: 'city', ...city }),
+    });
+    const labelEntity = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(city.lon, city.lat, 30000),
+      billboard: {
+        image: cityTextImage(city.name),
+        scale: 0.5,
         verticalOrigin: Cesium.VerticalOrigin.TOP,
-        pixelOffset: new Cesium.Cartesian2(0, 8),
-        disableDepthTestDistance: 0,
-        translucencyByDistance: new Cesium.NearFarScalar(2000000, 1.0, 8000000, 0.0),
-        scaleByDistance: new Cesium.NearFarScalar(1000000, 1.0, 6000000, 0.4),
+        pixelOffset: new Cesium.Cartesian2(0, 10),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 12_000_000.0),
+        scaleByDistance: new Cesium.NearFarScalar(1_500_000, 1.0, 8_000_000, 0.72),
+        translucencyByDistance: new Cesium.NearFarScalar(1_200_000, 1.0, 9_000_000, 0.35),
       },
       show: state.citiesVisible,
       description: JSON.stringify({ type: 'city', ...city }),
     });
     state.cityEntities.push(entity);
+    state.cityEntities.push(labelEntity);
   }
 }
 
@@ -525,17 +725,27 @@ async function fetchGpsJamming() {
           outlineWidth: 1,
           disableDepthTestDistance: 0,
         },
-        label: {
-          text: String(p.region || 'GPS Blocking'),
-          font: '10px Courier New',
-          fillColor: Cesium.Color.fromCssColorString('#ffd6d6'),
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        description: JSON.stringify({
+          type: 'gps-jam',
+          region: p.region || 'GPS Blocking',
+          severity,
+          note: p.note || 'GNSS/GPS interference',
+          source: payload?.source || '',
+          updatedAt: p.updatedAt || payload?.asOf || null,
+        }),
+        show: state.gpsJammingVisible,
+      });
+      const labelEnt = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, 45000),
+        billboard: {
+          image: gpsTextImage(String(p.region || 'GPS Blocking')),
+          scale: 0.52,
           verticalOrigin: Cesium.VerticalOrigin.TOP,
           pixelOffset: new Cesium.Cartesian2(0, 10),
-          disableDepthTestDistance: 0,
-          scaleByDistance: new Cesium.NearFarScalar(1_000_000, 1.0, 10_000_000, 0.55),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 12_000_000.0),
+          scaleByDistance: new Cesium.NearFarScalar(1_200_000, 1.0, 10_000_000, 0.7),
+          translucencyByDistance: new Cesium.NearFarScalar(1_000_000, 1.0, 10_000_000, 0.35),
         },
         description: JSON.stringify({
           type: 'gps-jam',
@@ -548,6 +758,7 @@ async function fetchGpsJamming() {
         show: state.gpsJammingVisible,
       });
       state.gpsJammingEntities.push(ent);
+      state.gpsJammingEntities.push(labelEnt);
     }
     viewer.scene.requestRender();
   } catch (err) {
@@ -604,9 +815,9 @@ const CITY_CAM_INFO = {
   toronto:     { label: 'Toronto',      staticApi: '/api/cameras/static/toronto',    external: 'https://www.earthcam.com/world/canada/toronto/' },
   vancouver:   { label: 'Vancouver',    staticApi: '/api/cameras/static/vancouver',  external: 'https://www.earthcam.com/world/canada/vancouver/' },
   mexico:      { label: 'Mexico City',  staticApi: '/api/cameras/static/mexico',     external: 'https://www.earthcam.com/world/mexico/mexicocity/' },
-  saopaulo:    { label: 'SÃ£o Paulo',    staticApi: '/api/cameras/static/saopaulo',   external: 'https://www.earthcam.com/world/brazil/saopaulo/' },
+  saopaulo:    { label: 'Sao Paulo',     staticApi: '/api/cameras/static/saopaulo',   external: 'https://www.earthcam.com/world/brazil/saopaulo/' },
   buenosaires: { label: 'Buenos Aires', staticApi: '/api/cameras/static/buenosaires',external: 'https://www.earthcam.com/world/argentina/buenosaires/' },
-  bogota:      { label: 'BogotÃ¡',       staticApi: '/api/cameras/static/bogota',     external: 'https://www.earthcam.com/world/colombia/bogota/' },
+  bogota:      { label: 'Bogota',        staticApi: '/api/cameras/static/bogota',     external: 'https://www.earthcam.com/world/colombia/bogota/' },
   lima:        { label: 'Lima',         staticApi: '/api/cameras/static/lima',       external: 'https://www.earthcam.com/world/peru/lima/' },
   santiago:    { label: 'Santiago',     staticApi: '/api/cameras/static/santiago',   external: 'https://www.earthcam.com/world/chile/santiago/' },
   paris:       { label: 'Paris',        staticApi: '/api/cameras/static/paris',      external: 'https://www.earthcam.com/world/france/paris/' },
@@ -965,6 +1176,7 @@ function renderStaticCamCards(cams) {
 // â”€â”€ Geopolitical Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const eventsListEl  = document.getElementById('events-list');
 const eventsUpdateEl = document.getElementById('events-update');
+const eventsFreshnessEl = document.getElementById('events-freshness');
 const eventsStatusFilterEl = document.getElementById('events-status-filter');
 const eventsSeverityFilterEl = document.getElementById('events-severity-filter');
 const eventsTypeFilterEl = document.getElementById('events-type-filter');
@@ -983,9 +1195,11 @@ const eventDetailSeen = document.getElementById('event-detail-seen');
 const eventDetailSource = document.getElementById('event-detail-source');
 const eventDetailLink = document.getElementById('event-detail-link');
 const eventDetailCctvBtn = document.getElementById('event-detail-cctv');
+const eventDetailPinBtn = document.getElementById('event-detail-pin');
 const alertToastWrap = document.getElementById('alert-toast-wrap');
 let eventSelectedKey = '';
 let currentEventDetail = null;
+let pinnedEventKey = localStorage.getItem('worldview.events.pinned') || '';
 const alertedEventTimes = new Map();
 const eventView = {
   timeline: '24',
@@ -997,6 +1211,7 @@ const eventAlerts = {
   enabled: localStorage.getItem('worldview.alerts.enabled') === '1',
   severity: localStorage.getItem('worldview.alerts.severity') || '2',
 };
+let geoRequestSeq = 0;
 
 // SVG icons: concentric rings, color by severity
 const _evtSVGCache = {};
@@ -1009,7 +1224,10 @@ function eventSVG(severity) {
 }
 
 function clearEventEntities() {
-  state.eventEntities.forEach(({ entity }) => viewer.entities.remove(entity));
+  state.eventEntities.forEach(({ entity, labelEntity }) => {
+    viewer.entities.remove(entity);
+    if (labelEntity) viewer.entities.remove(labelEntity);
+  });
   state.eventEntities = [];
 }
 
@@ -1076,6 +1294,44 @@ function populateEventTypeOptions(types = []) {
   }
 }
 
+function setEventsFreshness(payload) {
+  if (!eventsFreshnessEl) return;
+  const isCached = Boolean(payload?.cached);
+  eventsFreshnessEl.classList.remove('live', 'cached');
+  eventsFreshnessEl.classList.add(isCached ? 'cached' : 'live');
+  eventsFreshnessEl.textContent = isCached ? 'Cached feed' : 'Live feed';
+}
+
+function renderEventsLoading(count = 4) {
+  if (!eventsListEl) return;
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    rows.push(
+      '<div class="events-skeleton"><div class="events-skeleton-bar"></div><div class="events-skeleton-bar short"></div></div>'
+    );
+  }
+  eventsListEl.innerHTML = rows.join('');
+}
+
+function renderEventsEmpty(message, hint = '') {
+  if (!eventsListEl) return;
+  const hintHtml = hint ? `<span class="events-empty-hint">${hint}</span>` : '';
+  eventsListEl.innerHTML = `<div class="events-empty">${message}${hintHtml}</div>`;
+}
+
+function syncPinnedEventStorage() {
+  if (pinnedEventKey) localStorage.setItem('worldview.events.pinned', pinnedEventKey);
+  else localStorage.removeItem('worldview.events.pinned');
+}
+
+function updateEventPinButton(ev) {
+  if (!eventDetailPinBtn) return;
+  const key = ev ? eventKey(ev) : '';
+  const isPinned = Boolean(key && key === pinnedEventKey);
+  eventDetailPinBtn.classList.toggle('active', isPinned);
+  eventDetailPinBtn.textContent = isPinned ? 'Unpin Event' : 'Pin Event';
+}
+
 function showAlertToast(message, severity = 2) {
   if (!alertToastWrap) return;
   const toast = document.createElement('div');
@@ -1124,6 +1380,7 @@ function closeEventDetail() {
   if (eventDetailPanel) eventDetailPanel.style.display = 'none';
   eventSelectedKey = '';
   currentEventDetail = null;
+  updateEventPinButton(null);
   document.querySelectorAll('.event-card.active').forEach(el => el.classList.remove('active'));
 }
 
@@ -1135,6 +1392,7 @@ function openEventDetail(ev, cardEl = null) {
   if (cardEl) cardEl.classList.add('active');
 
   eventDetailPanel.style.display = 'block';
+  updateEventPinButton(ev);
   const stateLabel = String(ev.state || 'active').toUpperCase();
   eventDetailMeta.textContent = `${(ev.location || 'Unknown').toUpperCase()} | ${ev.eventType || 'Geopolitical Event'} | ${stateLabel}`;
   eventDetailSummary.textContent = ev.summary || ev.title || 'No summary available.';
@@ -1168,7 +1426,7 @@ async function openEventCCTV(ev) {
   cctvStatus.textContent = 'Searching Windy webcams near event...';
   cctvExternal.href = `https://www.google.com/search?q=${encodeURIComponent((ev.location || 'location') + ' live camera')}`;
   cctvExternal.style.display = 'inline';
-  cctvExternal.textContent = 'Open More â†—';
+  cctvExternal.textContent = 'Open More ->';
 
   viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(Number(ev.lon), Number(ev.lat), 15000),
@@ -1198,8 +1456,23 @@ if (eventDetailCctvBtn) {
     openEventCCTV(currentEventDetail);
   });
 }
+if (eventDetailPinBtn) {
+  eventDetailPinBtn.addEventListener('click', () => {
+    if (!currentEventDetail) return;
+    const key = eventKey(currentEventDetail);
+    pinnedEventKey = pinnedEventKey === key ? '' : key;
+    syncPinnedEventStorage();
+    updateEventPinButton(currentEventDetail);
+    document.querySelectorAll('.event-card').forEach((card) => {
+      const match = card.getAttribute('data-event-key') === pinnedEventKey;
+      card.classList.toggle('pinned', match);
+    });
+  });
+}
 
-async function fetchGeopolitical() {
+async function fetchGeopolitical(opts = {}) {
+  const shouldAlert = Boolean(opts.alerts);
+  const reqSeq = ++geoRequestSeq;
   try {
     const params = new URLSearchParams({
       timeline: eventView.timeline,
@@ -1209,14 +1482,20 @@ async function fetchGeopolitical() {
     });
     const res = await fetch(`/api/geopolitical?${params.toString()}`);
     const payload = await res.json();
+    if (reqSeq !== geoRequestSeq) return;
+    setEventsFreshness(payload);
     const events = Array.isArray(payload?.events) ? payload.events : Array.isArray(payload) ? payload : [];
     const availableTypes = Array.isArray(payload?.availableTypes) ? payload.availableTypes : [];
     populateEventTypeOptions(availableTypes);
     if (!Array.isArray(events) || events.length === 0) {
       clearEventEntities();
-      eventsListEl.innerHTML = '<div style="font-size:0.6rem;color:var(--muted);text-align:center;padding:12px;">No events match filters</div>';
+      const timelineLabel = eventView.timeline === '24' ? '24H' : eventView.timeline === '168' ? '7D' : eventView.timeline === '720' ? '30D' : 'ONGOING';
+      renderEventsEmpty(
+        `No events found for ${timelineLabel}.`,
+        timelineLabel === '24H' ? 'Try 7D or Ongoing for broader context.' : ''
+      );
       eventsUpdateEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-      closeEventDetail();
+      if (!pinnedEventKey) closeEventDetail();
       return;
     }
 
@@ -1225,6 +1504,7 @@ async function fetchGeopolitical() {
 
     let detailRestored = false;
     for (const ev of events) {
+      const key = eventKey(ev);
       // Globe entity
       const entity = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 0),
@@ -1236,7 +1516,21 @@ async function fetchGeopolitical() {
         },
         description: JSON.stringify({ type: 'event', ...ev }),
       });
-      state.eventEntities.push({ entity, severity: ev.severity });
+      const labelEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 55000),
+        billboard: {
+          image: eventTextImage(String(ev.location || 'Event')),
+          scale: 0.5,
+          verticalOrigin: Cesium.VerticalOrigin.TOP,
+          pixelOffset: new Cesium.Cartesian2(0, 10),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 12_000_000.0),
+          scaleByDistance: new Cesium.NearFarScalar(1_200_000, 1.0, 10_000_000, 0.7),
+          translucencyByDistance: new Cesium.NearFarScalar(1_000_000, 1.0, 10_000_000, 0.35),
+        },
+        description: JSON.stringify({ type: 'event', ...ev }),
+      });
+      state.eventEntities.push({ entity, labelEntity, severity: ev.severity });
 
       // Sidebar card
       const card = document.createElement('div');
@@ -1245,14 +1539,18 @@ async function fetchGeopolitical() {
       const confClass = confidenceClass(ev.confidence);
       const confText = ev.confidence?.score != null ? `${ev.confidence.label || 'LOW'} ${ev.confidence.score}` : 'LOW 0';
       const stateLabel = String(ev.state || 'active').toUpperCase();
+      const isPinned = Boolean(pinnedEventKey && key === pinnedEventKey);
       card.innerHTML = `
         <div class="event-header">
           <div class="event-dot sev-${ev.severity}"></div>
           <div class="event-location">${ev.location.toUpperCase()}</div>
+          ${isPinned ? '<div class="event-pin-badge">PINNED</div>' : ''}
           <div class="event-confidence ${confClass}">${confText}</div>
         </div>
         <div class="event-title">${ev.title}</div>
         <div class="event-source">${[stateLabel, timeStr, ev.domain].filter(Boolean).join(' | ')}</div>`;
+      card.setAttribute('data-event-key', key);
+      if (isPinned) card.classList.add('pinned');
       card.addEventListener('click', () => {
         viewer.camera.flyTo({
           destination: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 2_500_000),
@@ -1260,27 +1558,34 @@ async function fetchGeopolitical() {
         });
         openEventDetail(ev, card);
       });
-      if (eventSelectedKey && eventSelectedKey === eventKey(ev)) card.classList.add('active');
+      if (eventSelectedKey && eventSelectedKey === key) card.classList.add('active');
       eventsListEl.appendChild(card);
-      if (!detailRestored && eventSelectedKey && eventSelectedKey === eventKey(ev)) {
+      if (!detailRestored && eventSelectedKey && eventSelectedKey === key) {
+        openEventDetail(ev, card);
+        detailRestored = true;
+      }
+      if (!detailRestored && pinnedEventKey && pinnedEventKey === key) {
         openEventDetail(ev, card);
         detailRestored = true;
       }
     }
 
-    if (eventSelectedKey && !detailRestored) closeEventDetail();
+    if ((eventSelectedKey || pinnedEventKey) && !detailRestored) closeEventDetail();
 
-    processEventAlerts(events);
+    if (shouldAlert) processEventAlerts(events);
     eventsUpdateEl.textContent = `Updated ${new Date().toLocaleTimeString()} | ${events.length} shown`;
     viewer.scene.requestRender();
   } catch (err) {
     console.error('Geopolitical events error:', err.message);
-    eventsListEl.innerHTML = '<div style="font-size:0.6rem;color:var(--muted);text-align:center;padding:12px;">Events unavailable</div>';
+    setEventsFreshness({ cached: true });
+    renderEventsEmpty('Events unavailable right now.', 'Data source timeout or upstream error.');
   }
 }
 
 function applyEventFilters() {
-  fetchGeopolitical();
+  renderEventsLoading();
+  if (!pinnedEventKey) closeEventDetail();
+  fetchGeopolitical({ alerts: false });
 }
 
 eventsTimelineButtons.forEach(btn => {
@@ -1443,7 +1748,7 @@ document.getElementById('toggle-borders').addEventListener('change', e => {
   state.bordersVisible = e.target.checked;
   if (state.bordersSource) state.bordersSource.show = state.bordersVisible;
   if (state.usStatesSource) state.usStatesSource.show = state.bordersVisible;
-  state.countryLabelEntities.forEach(ent => { ent.show = state.bordersVisible; });
+  updateCountryLabelVisibility();
 });
 
 document.getElementById('toggle-cities').addEventListener('change', e => {
@@ -1474,7 +1779,7 @@ document.querySelectorAll('[data-region]').forEach(btn => {
       destination: Cesium.Cartesian3.fromDegrees(r.lon, r.lat, r.alt),
       duration: 2,
     });
-    setStatus(`Focused: ${r.label} â€” showing tracked aircraft in view.`);
+    setStatus(`Focused: ${r.label} - showing tracked aircraft in view.`);
   });
 });
 
@@ -1495,14 +1800,14 @@ function applyViewMode(mode) {
       scene.globe.enableLighting = true;
       if (scene.atmosphere) scene.atmosphere.brightnessShift = -0.8;
       scene.skyAtmosphere.brightnessShift = -0.5;
-      setStatus('Night mode â€” globe lit by sun angle.');
+      setStatus('Night mode - globe lit by sun angle.');
       break;
     case 'terrain':
       scene.globe.enableLighting = true;
       if (scene.atmosphere) scene.atmosphere.brightnessShift = 0.1;
       scene.skyAtmosphere.brightnessShift = 0.1;
       viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(-109, 36.5, 800000), duration: 2 });
-      setStatus('Terrain mode â€” zoomed to Colorado Plateau.');
+      setStatus('Terrain mode - zoomed to Colorado Plateau.');
       break;
     default:
       scene.globe.enableLighting = true;
@@ -1526,15 +1831,16 @@ loadCountryBorders();
 loadUSStateBorders();
 loadCities();
 loadAllData();
-fetchGeopolitical();
+renderEventsLoading();
+fetchGeopolitical({ alerts: false });
 
 // Auto-refresh intervals
 setInterval(fetchISS,                10_000);
 setInterval(updateSatellitePositions,30_000);
 setInterval(fetchFlights,            60_000);
 setInterval(fetchSatellites,      3_600_000);
-setInterval(fetchGpsJamming,       300_000);
-setInterval(fetchGeopolitical,    900_000);  // every 15 min
+setInterval(fetchGpsJamming,        60_000);
+setInterval(() => fetchGeopolitical({ alerts: true }), 900_000);  // every 15 min
 
 
 
