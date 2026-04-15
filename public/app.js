@@ -109,7 +109,6 @@ async function fetchFlights() {
   try {
     const res  = await fetch('/api/flights');
     const data = await res.json();
-    flightCollection.removeAll();
 
     const planes = data.ac || [];
     if (!planes.length) {
@@ -117,6 +116,17 @@ async function fetchFlights() {
       flightCountEl.textContent = '0';
       return;
     }
+
+    const snapshot = `${planes.length}|${planes.slice(0, 24).map(p => `${p.hex || ''}:${p.lat || ''}:${p.lon || ''}`).join(',')}`;
+    if (fetchFlights._lastSnapshot === snapshot) {
+      const feedLabel = data.stale ? 'cached feed' : 'live feed';
+      setStatus(`Tracking ${Number(flightCountEl.textContent.replace(/,/g, '')) || planes.length} aircraft globally (${feedLabel}).`);
+      setLastUpdate();
+      return;
+    }
+    fetchFlights._lastSnapshot = snapshot;
+
+    flightCollection.removeAll();
 
     let count = 0;
     for (const ac of planes) {
@@ -135,7 +145,8 @@ async function fetchFlights() {
       count++;
     }
     flightCountEl.textContent = count.toLocaleString();
-    setStatus(`Tracking ${count} aircraft globally (military + restricted + sampled civil).`);
+    const feedLabel = data.stale ? 'cached feed' : 'live feed';
+    setStatus(`Tracking ${count} aircraft globally (military + restricted + sampled civil, ${feedLabel}).`);
     setLastUpdate();
   } catch (err) {
     setStatus(`Flight error: ${err.message}`);
