@@ -17,6 +17,7 @@ export function getEventsDomRefs() {
     eventDetailActors: document.getElementById('event-detail-actors'),
     eventDetailSeverity: document.getElementById('event-detail-severity'),
     eventDetailConfidence: document.getElementById('event-detail-confidence'),
+    eventDetailPublished: document.getElementById('event-detail-published'),
     eventDetailSeen: document.getElementById('event-detail-seen'),
     eventDetailSource: document.getElementById('event-detail-source'),
     eventDetailLink: document.getElementById('event-detail-link'),

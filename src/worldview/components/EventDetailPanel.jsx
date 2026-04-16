@@ -13,6 +13,7 @@ export function EventDetailPanel() {
           <div className="event-detail-row"><span>Actors</span><strong id="event-detail-actors">-</strong></div>
           <div className="event-detail-row"><span>Severity</span><strong id="event-detail-severity">-</strong></div>
           <div className="event-detail-row"><span>Confidence</span><strong id="event-detail-confidence">-</strong></div>
+          <div className="event-detail-row"><span>Published</span><strong id="event-detail-published">-</strong></div>
           <div className="event-detail-row"><span>Seen</span><strong id="event-detail-seen">-</strong></div>
           <div className="event-detail-row"><span>Source</span><strong id="event-detail-source">-</strong></div>
         </div>

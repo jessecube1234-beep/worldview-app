@@ -28,6 +28,19 @@ export function initWorldViewEvents(deps) {
   const showToast = eventUtils.showAlertToast;
   const desktopNotify = eventUtils.maybeDesktopNotify;
 
+  function formatPublishedDate(raw) {
+    if (!raw) return 'Unknown';
+    const s = String(raw).trim();
+    if (/^\d{8}T\d{6}Z$/.test(s)) {
+      const iso = `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`;
+      const d = new Date(iso);
+      if (!Number.isNaN(d.getTime())) return d.toLocaleString();
+    }
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleString();
+    return 'Unknown';
+  }
+
   function clearEventEntities() {
     state.eventEntities.forEach(({ entity, labelEntity }) => {
       viewer.entities.remove(entity);
@@ -102,6 +115,9 @@ export function initWorldViewEvents(deps) {
     dom.eventDetailConfidence.textContent = ev.confidence?.score != null
       ? `${ev.confidence.score}/100 (${ev.confidence.label || 'N/A'})`
       : 'N/A';
+    if (dom.eventDetailPublished) {
+      dom.eventDetailPublished.textContent = formatPublishedDate(ev.seendate);
+    }
     dom.eventDetailSeen.textContent = `${formatEventTime(ev.seendate) || 'Unknown'} (${formatEventTimestamp(ev.lastSeen)})`;
     const sourceLabel = Array.isArray(ev.sourceNames) && ev.sourceNames.length
       ? ev.sourceNames.join(', ')
