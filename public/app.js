@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿/* 
    WorldView  app.js
    3D globe - Military aircraft - ISS - Satellites - Country borders - Cities/CCTV
@@ -5,6 +6,15 @@
  */
 
 //  Cesium token 
+=======
+/* ──────────────────────────────────────────────────────────────────────────
+   WorldView — app.js
+   3D globe · Military aircraft · ISS · Satellites · Country borders · Cities/CCTV
+   Stack: Cesium.js · satellite.js · ADS-B Exchange · CelesTrak · WhereTheISS · TfL
+────────────────────────────────────────────────────────────────────────── */
+
+// ── Cesium token ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const cesiumToken = String(window.WORLDVIEW_CONFIG?.cesiumIonToken || '').trim();
 const hasCesiumToken = Boolean(cesiumToken);
 if (hasCesiumToken) {
@@ -13,7 +23,11 @@ if (hasCesiumToken) {
   console.warn('CESIUM_ION_TOKEN not set. Running without Cesium World Terrain.');
 }
 
+<<<<<<< HEAD
 //  Init Viewer 
+=======
+// ── Init Viewer ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const viewer = new Cesium.Viewer('cesiumContainer', {
   terrain: hasCesiumToken ? Cesium.Terrain.fromWorldTerrain() : undefined,
   baseLayerPicker: false,
@@ -39,11 +53,19 @@ viewer.camera.flyTo({
   duration: 2,
 });
 
+<<<<<<< HEAD
 //  Primitive collections 
 const flightCollection = viewer.scene.primitives.add(new Cesium.BillboardCollection());
 const satCollection    = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
 
 //  State 
+=======
+// ── Primitive collections ─────────────────────────────────────────────────────
+const flightCollection = viewer.scene.primitives.add(new Cesium.BillboardCollection());
+const satCollection    = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+
+// ── State ────────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const state = {
   flightsVisible:   true,
   issVisible:       true,
@@ -65,7 +87,11 @@ const state = {
 let countryLabelUpdatePending = false;
 let countryLabelLastUpdateMs = 0;
 
+<<<<<<< HEAD
 //  DOM refs 
+=======
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const flightCountEl  = document.getElementById('flight-count');
 const satCountEl     = document.getElementById('sat-count');
 const issAltEl       = document.getElementById('iss-alt');
@@ -77,7 +103,11 @@ const tooltip        = document.getElementById('info-tooltip');
 const tooltipTitle   = document.getElementById('tooltip-title');
 const tooltipBody    = document.getElementById('tooltip-body');
 
+<<<<<<< HEAD
 //  UTC Clock 
+=======
+// ── UTC Clock ────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 function updateClock() {
   const now = new Date();
   utcClockEl.textContent =
@@ -88,11 +118,19 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+<<<<<<< HEAD
 //  Helpers 
 function setStatus(msg) { statusMsg.textContent = msg; }
 function setLastUpdate() { lastUpdateEl.textContent = `Updated ${new Date().toLocaleTimeString()}`; }
 
 //  Plane SVG  cached by heading rounded to nearest 15 deg  
+=======
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function setStatus(msg) { statusMsg.textContent = msg; }
+function setLastUpdate() { lastUpdateEl.textContent = `Updated ${new Date().toLocaleTimeString()}`; }
+
+// ── Plane SVG — cached by heading rounded to nearest 15° ─────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const _svgCache = {};
 function planeSVG(heading) {
   const h = Math.round(heading / 15) * 15 % 360;
@@ -103,6 +141,7 @@ function planeSVG(heading) {
   return _svgCache[h];
 }
 
+<<<<<<< HEAD
 //  Military Aircraft 
 function createLocalFlightsController() {
   let lastSnapshot = '';
@@ -169,116 +208,112 @@ const flightsController = (window.WorldViewFlights && typeof window.WorldViewFli
       Cesium,
     })
   : createLocalFlightsController();
+=======
+// ── Military Aircraft ─────────────────────────────────────────────────────────
+const flightsController = window.WorldViewFlights.createFlightsController({
+  fetchImpl: fetch,
+  setStatus,
+  setLastUpdate,
+  flightCollection,
+  flightCountEl,
+  planeSVG,
+  Cesium,
+});
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 
 async function fetchFlights() {
   return flightsController.fetchFlights();
 }
-// -- Satellite + ISS Tracking ---------------------------------------------------------
-function createLocalSpaceController() {
-  let tleData = [];
-  const issSvg = (() => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><rect x="0" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="20" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="8" y="10" width="12" height="8" rx="2" fill="#aee8ff"/><circle cx="14" cy="14" r="3" fill="#ffffff"/></svg>';
-    return `data:image/svg+xml;base64,${btoa(svg)}`;
-  })();
+<<<<<<< HEAD
+// -- Satellite Tracking ---------------------------------------------------------------- 
+=======
 
-  return {
-    async fetchSatellites() {
-      try {
-        const res = await fetch('/api/satellites');
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        tleData = data;
-        this.updateSatellitePositions();
-        if (satCountEl) satCountEl.textContent = tleData.length.toLocaleString();
-      } catch (err) {
-        setStatus(`Satellite error: ${err.message}`);
-        console.error('Satellite fetch error:', err.message);
-      }
-    },
-
-    updateSatellitePositions() {
-      satCollection.removeAll();
-      const now = new Date();
-      const gmst = satellite.gstime(now);
-      for (const sat of tleData) {
-        try {
-          const satrec = satellite.twoline2satrec(sat.tle1, sat.tle2);
-          const posVel = satellite.propagate(satrec, now);
-          if (!posVel || !posVel.position) continue;
-          const geo = satellite.eciToGeodetic(posVel.position, gmst);
-          const lat = satellite.degreesLat(geo.latitude);
-          const lon = satellite.degreesLong(geo.longitude);
-          const altM = geo.height * 1000;
-          satCollection.add({
-            position: Cesium.Cartesian3.fromDegrees(lon, lat, altM),
-            color: new Cesium.Color(0.53, 0.87, 1.0, 0.85),
-            pixelSize: 4,
-            id: { type: 'satellite', name: sat.name, lat: lat.toFixed(2), lon: lon.toFixed(2), alt: `${Math.round(geo.height)} km` },
-          });
-        } catch (_) {}
-      }
-    },
-
-    async fetchISS() {
-      try {
-        const res = await fetch('/api/iss');
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        const { latitude, longitude, altitude, velocity } = data;
-        issAltEl.textContent = `${Math.round(altitude)} km`;
-        issSpeedEl.textContent = `${Math.round(velocity)} km/h`;
-        if (state.issEntity) viewer.entities.remove(state.issEntity);
-        state.issEntity = viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(longitude, latitude, altitude * 1000),
-          billboard: { image: issSvg, scale: 1, verticalOrigin: Cesium.VerticalOrigin.CENTER },
-          label: {
-            text: 'ISS',
-            font: 'bold 11px Courier New',
-            fillColor: Cesium.Color.fromCssColorString('#ffdd57'),
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 2,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            pixelOffset: new Cesium.Cartesian2(0, -18),
-          },
-          description: JSON.stringify({ type: 'iss', lat: latitude.toFixed(4), lon: longitude.toFixed(4), alt: `${Math.round(altitude)} km`, vel: `${Math.round(velocity)} km/h` }),
-          show: state.issVisible,
-        });
-      } catch (err) {
-        console.error('ISS error:', err.message);
-      }
-    },
-  };
-}
-
-const spaceController = (window.WorldViewSpace && typeof window.WorldViewSpace.createSpaceController === 'function')
-  ? window.WorldViewSpace.createSpaceController({
-      fetchImpl: fetch,
-      setStatus,
-      viewer,
-      state,
-      satCollection,
-      satCountEl,
-      issAltEl,
-      issSpeedEl,
-      satellite,
-      Cesium,
-    })
-  : createLocalSpaceController();
+// �� Satellite Tracking ���������������������������������������������������������������� ────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
+let tleData = [];
 
 async function fetchSatellites() {
-  return spaceController.fetchSatellites();
+  try {
+    const res  = await fetch('/api/satellites');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    tleData = data;
+    updateSatellitePositions();
+    if (satCountEl) satCountEl.textContent = tleData.length.toLocaleString();
+  } catch (err) {
+    setStatus(`Satellite error: ${err.message}`);
+    console.error('Satellite fetch error:', err.message);
+  }
 }
 
 function updateSatellitePositions() {
-  return spaceController.updateSatellitePositions();
+  satCollection.removeAll();
+  const now  = new Date();
+  const gmst = satellite.gstime(now);
+  for (const sat of tleData) {
+    try {
+      const satrec = satellite.twoline2satrec(sat.tle1, sat.tle2);
+      const posVel = satellite.propagate(satrec, now);
+      if (!posVel || !posVel.position) continue;
+      const geo  = satellite.eciToGeodetic(posVel.position, gmst);
+      const lat  = satellite.degreesLat(geo.latitude);
+      const lon  = satellite.degreesLong(geo.longitude);
+      const altM = geo.height * 1000;
+      satCollection.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, altM),
+        color: new Cesium.Color(0.53, 0.87, 1.0, 0.85),
+        pixelSize: 4,
+        id: { type: 'satellite', name: sat.name, lat: lat.toFixed(2), lon: lon.toFixed(2), alt: Math.round(geo.height) + ' km' },
+      });
+    } catch (_) {}
+  }
 }
+
+<<<<<<< HEAD
+//  ISS Tracking 
+=======
+// ── ISS Tracking ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
+const _issSVG = (() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><rect x="0" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="20" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="8" y="10" width="12" height="8" rx="2" fill="#aee8ff"/><circle cx="14" cy="14" r="3" fill="#ffffff"/></svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+})();
 
 async function fetchISS() {
-  return spaceController.fetchISS();
+  try {
+    const res  = await fetch('/api/iss');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const { latitude, longitude, altitude, velocity } = data;
+    issAltEl.textContent   = `${Math.round(altitude)} km`;
+    issSpeedEl.textContent = `${Math.round(velocity)} km/h`;
+    if (state.issEntity) viewer.entities.remove(state.issEntity);
+    state.issEntity = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(longitude, latitude, altitude * 1000),
+      billboard: { image: _issSVG, scale: 1, verticalOrigin: Cesium.VerticalOrigin.CENTER },
+      label: {
+        text: 'ISS',
+        font: 'bold 11px Courier New',
+        fillColor: Cesium.Color.fromCssColorString('#ffdd57'),
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -18),
+      },
+      description: JSON.stringify({ type: 'iss', lat: latitude.toFixed(4), lon: longitude.toFixed(4), alt: Math.round(altitude) + ' km', vel: Math.round(velocity) + ' km/h' }),
+      show: state.issVisible,
+    });
+  } catch (err) {
+    console.error('ISS error:', err.message);
+  }
 }
 
+<<<<<<< HEAD
 //  Country Borders 
+=======
+// ── Country Borders ───────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 
 function normalizeLonDelta(deg) {
   let d = deg;
@@ -473,7 +508,11 @@ async function loadCountryBorders() {
       strokeWidth: 1,
     });
 
+<<<<<<< HEAD
     // Disable polygon fill entirely  transparent fill still generates geometry
+=======
+    // Disable polygon fill entirely — transparent fill still generates geometry
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
     // and causes "attribute list" mismatch errors in Cesium's renderer
     for (const entity of dataSource.entities.values) {
       if (entity.polygon) {
@@ -590,7 +629,11 @@ async function loadUSStateBorders() {
   }
 }
 
+<<<<<<< HEAD
 //  Cities 
+=======
+// ── Cities ────────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const US_STATE_CITIES = [
   { name: 'Birmingham',     lat: 33.5186,  lon: -86.8104,  country: 'US', cam: 'us-birmingham' },
   { name: 'Anchorage',      lat: 61.2181,  lon: -149.9003, country: 'US', cam: 'us-anchorage' },
@@ -831,7 +874,11 @@ async function fetchGpsJamming() {
   }
 }
 
+<<<<<<< HEAD
 //  Camera globe overlay 
+=======
+// ── Camera globe overlay ──────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const _camSVG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="14" viewBox="0 0 20 14"><rect x="1" y="2" width="12" height="10" rx="2" fill="#ff6b35" opacity="0.95"/><polygon points="13,4 19,1 19,13 13,10" fill="#ff6b35" opacity="0.85"/><circle cx="7" cy="7" r="2.8" fill="#fff" opacity="0.7"/></svg>`;
   return 'data:image/svg+xml;base64,' + btoa(svg);
@@ -866,12 +913,21 @@ function plotCamerasOnGlobe(cameras) {
   viewer.scene.requestRender();
 }
 
+<<<<<<< HEAD
 //  CCTV  city webcam sources (every city has staticApi or liveApi) 
 const CITY_CAM_INFO = {
   // Live APIs  real-time images + globe positions
   london:      { label: 'London',       liveApi: '/api/cameras/london',              external: 'https://www.earthcam.com/world/england/london/' },
   singapore:   { label: 'Singapore',    liveApi: '/api/cameras/singapore',           external: 'https://onemotoring.lta.gov.sg/content/onemotoring/home/driving/traffic_information/traffic-cameras.html' },
   // Static overlays  globe dots + camera grid for every other city
+=======
+// ── CCTV — city webcam sources (every city has staticApi or liveApi) ──────────
+const CITY_CAM_INFO = {
+  // Live APIs — real-time images + globe positions
+  london:      { label: 'London',       liveApi: '/api/cameras/london',              external: 'https://www.earthcam.com/world/england/london/' },
+  singapore:   { label: 'Singapore',    liveApi: '/api/cameras/singapore',           external: 'https://onemotoring.lta.gov.sg/content/onemotoring/home/driving/traffic_information/traffic-cameras.html' },
+  // Static overlays — globe dots + camera grid for every other city
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
   nyc:         { label: 'New York',     staticApi: '/api/cameras/static/nyc',        external: 'https://webcams.nyc.gov/' },
   la:          { label: 'Los Angeles',  staticApi: '/api/cameras/static/la',         external: 'https://cwwp2.dot.ca.gov/vm/streamlist.htm' },
   chicago:     { label: 'Chicago',      staticApi: '/api/cameras/static/chicago',    external: 'https://www.earthcam.com/usa/illinois/chicago/' },
@@ -971,7 +1027,11 @@ async function fetchWindyCameras(lat, lon, radius = 40) {
 }
 
 
+<<<<<<< HEAD
 //  CCTV Modal 
+=======
+// ── CCTV Modal ────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const cctvOverlay  = document.getElementById('cctv-overlay');
 const cctvTitle    = document.getElementById('cctv-title');
 const cctvMeta     = document.getElementById('cctv-meta');
@@ -1238,7 +1298,11 @@ function renderStaticCamCards(cams) {
   }
 }
 
+<<<<<<< HEAD
 //  Geopolitical Events 
+=======
+// ── Geopolitical Events ───────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const eventsListEl  = document.getElementById('events-list');
 const eventsUpdateEl = document.getElementById('events-update');
 const eventsFreshnessEl = document.getElementById('events-freshness');
@@ -1703,7 +1767,11 @@ if (eventsAlertSeverityEl) {
   });
 }
 
+<<<<<<< HEAD
 // Pulsing animation  update entity scales every 80ms
+=======
+// Pulsing animation — update entity scales every 80ms
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 setInterval(() => {
   if (!state.eventEntities.length) return;
   const t = Date.now() / 1000;
@@ -1714,7 +1782,11 @@ setInterval(() => {
   viewer.scene.requestRender();
 }, 80);
 
+<<<<<<< HEAD
 //  Hover Tooltip 
+=======
+// ── Hover Tooltip ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
 handler.setInputAction(movement => {
@@ -1767,7 +1839,11 @@ handler.setInputAction(movement => {
   }
 }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
+<<<<<<< HEAD
 //  Click handler  cities, camera dots, geopolitical events 
+=======
+// ── Click handler — cities, camera dots, geopolitical events ──────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 handler.setInputAction(click => {
   const picked = viewer.scene.pick(click.position);
   if (!Cesium.defined(picked) || picked.id == null) return;
@@ -1793,7 +1869,11 @@ handler.setInputAction(click => {
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+<<<<<<< HEAD
 //  Layer Toggles 
+=======
+// ── Layer Toggles ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 document.getElementById('toggle-flights').addEventListener('change', e => {
   state.flightsVisible = e.target.checked;
   flightCollection.show = state.flightsVisible;
@@ -1826,7 +1906,11 @@ document.getElementById('toggle-gps-jamming').addEventListener('change', e => {
   state.gpsJammingEntities.forEach(ent => { ent.show = state.gpsJammingVisible; });
 });
 
+<<<<<<< HEAD
 //  Focus Regions 
+=======
+// ── Focus Regions ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 const REGIONS = {
   world:   { lon:   0,   lat:  20,  alt: 18_000_000, label: 'Global view' },
   mideast: { lon:  42,   lat:  27,  alt:  3_500_000, label: 'Middle East' },
@@ -1848,7 +1932,11 @@ document.querySelectorAll('[data-region]').forEach(btn => {
   });
 });
 
+<<<<<<< HEAD
 //  View Mode 
+=======
+// ── View Mode ─────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -1882,15 +1970,26 @@ function applyViewMode(mode) {
   }
 }
 
+<<<<<<< HEAD
 //  Refresh Button 
 document.getElementById('refresh-btn').addEventListener('click', loadAllData);
 
 //  Load All Data 
+=======
+// ── Refresh Button ────────────────────────────────────────────────────────────
+document.getElementById('refresh-btn').addEventListener('click', loadAllData);
+
+// ── Load All Data ─────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 async function loadAllData() {
   await Promise.all([fetchFlights(), fetchISS(), fetchSatellites(), fetchGpsJamming()]);
 }
 
+<<<<<<< HEAD
 //  Boot 
+=======
+// ── Boot ──────────────────────────────────────────────────────────────────────
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
 setStatus('Connecting to data sources...');
 loadCountryBorders();
 loadUSStateBorders();
@@ -1951,5 +2050,8 @@ startPollTimers();
 
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> parent of a261a36 (Add safe fallback when flights module is unavailable to prevent app startup failure)
