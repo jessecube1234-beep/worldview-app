@@ -15,6 +15,7 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
       if (!title) continue;
       const link = extractTag(block, 'link');
       const pubDate = extractTag(block, 'pubDate');
+      const description = extractTag(block, 'description');
       let domain = null;
       try {
         domain = link ? new URL(link).hostname.replace(/^www\./, '') : null;
@@ -27,6 +28,7 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
         url: link || null,
         domain,
         seendate: pubDate || null,
+        snippet: description || '',
         sourceId: sourceMeta.id,
         sourceName: sourceMeta.name,
         sourceQuality: sourceMeta.quality,
@@ -83,6 +85,8 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
       fetchGdeltArticles(),
       fetchRssArticles('https://feeds.bbci.co.uk/news/world/rss.xml', GEO_SOURCES.bbc),
       fetchRssArticles('https://news.google.com/rss/search?q=war+attack+missile+ceasefire+conflict&hl=en-US&gl=US&ceid=US:en', GEO_SOURCES.googlenews),
+      fetchRssArticles('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', GEO_SOURCES.googlenews),
+      fetchRssArticles('https://www.aljazeera.com/xml/rss/all.xml', { id: 'aljazeera', name: 'Al Jazeera RSS', quality: 0.72 }),
     ]);
     const merged = [];
     for (const result of results) {

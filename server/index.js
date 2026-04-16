@@ -94,7 +94,12 @@ function createApp(options = {}) {
     WINDY_BASE_URLS,
     WINDY_CACHE_TTL,
   });
-  registerGeopoliticalRoutes(app, { fetchWithTimeout, HEADERS });
+  registerGeopoliticalRoutes(app, {
+    fetchWithTimeout,
+    HEADERS,
+    envFallback,
+    envValue,
+  });
 
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {

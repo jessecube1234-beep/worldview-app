@@ -7,7 +7,7 @@ import { clusterGeoEvents, createGeoHistoryStore } from '../services/geopolitica
 const logger = createLogger('geopolitical');
 
 function createGeopoliticalHandler(deps) {
-  const { fetchWithTimeout, HEADERS } = deps;
+  const { fetchWithTimeout, HEADERS, envFallback, envValue } = deps;
   const sourceClient = createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger });
 
   let geoCache = null;
@@ -19,6 +19,7 @@ function createGeopoliticalHandler(deps) {
   const GEO_WAIT_FOR_REFRESH_MS = 1200;
   const GEO_HISTORY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const GEO_RESOLVED_AFTER_MS = 2 * 60 * 60 * 1000;
+  const allowDemoPadding = String(envValue?.('GEO_ALLOW_DEMO_PADDING', envFallback) || '').toLowerCase() === 'true';
 
   const history = createGeoHistoryStore({
     resolvedAfterMs: GEO_RESOLVED_AFTER_MS,
@@ -35,7 +36,7 @@ function createGeopoliticalHandler(deps) {
     const candidates = [];
     for (const article of articles) {
       if (!article.title) continue;
-      const loc = extractLocation(article.title);
+      const loc = extractLocation(`${article.title} ${article.snippet || ''}`);
       if (!loc) continue;
       candidates.push({
         title: article.title,
@@ -81,7 +82,7 @@ function createGeopoliticalHandler(deps) {
     events.sort((a, b) => (b.confidence?.score || 0) - (a.confidence?.score || 0));
     const top20 = events.slice(0, 20);
 
-    if (top20.length < 5) {
+    if (allowDemoPadding && top20.length > 0 && top20.length < 5) {
       for (const fallback of fallbackEvents) {
         if (top20.length >= 10) break;
         if (!top20.some((e) => e.location === fallback.location)) top20.push(fallback);
@@ -97,7 +98,7 @@ function createGeopoliticalHandler(deps) {
 
   return async function geopolitical(req, res) {
     const now = Date.now();
-    const hasGeoCache = Array.isArray(geoCache) && geoCache.length > 0;
+    const hasGeoCache = Array.isArray(geoCache);
     const cacheAgeMs = hasGeoCache ? (now - geoCacheFetchedAt) : Number.POSITIVE_INFINITY;
     const cacheStale = cacheAgeMs >= GEO_CACHE_REFRESH_MS;
 
@@ -136,7 +137,7 @@ function createGeopoliticalHandler(deps) {
       } catch (_) {}
     }
 
-    if (Array.isArray(geoCache) && geoCache.length) {
+    if (Array.isArray(geoCache)) {
       const filtered = history.filter(req.query, Date.now());
       return res.json({
         events: filtered.rows,
@@ -146,6 +147,7 @@ function createGeopoliticalHandler(deps) {
       });
     }
 
+    // No successful live cache yet (startup + upstream errors): hard fallback only here.
     history.update(fallbackEvents, now);
     const filtered = history.filter(req.query, now);
     const wantsOngoing = String(req.query?.timeline || '').toLowerCase() === 'ongoing';

@@ -77,16 +77,16 @@ const GEO_SOURCES = {
 };
 
 const FALLBACK_EVENTS_RAW = [
-  { title: 'Ongoing Russia-Ukraine conflict', location: 'Ukraine', lat: 49.0, lon: 31.0, severity: 3, url: null },
-  { title: 'Gaza conflict and humanitarian situation', location: 'Gaza/Palestine', lat: 31.5, lon: 34.5, severity: 3, url: null },
-  { title: 'Houthi attacks on Red Sea shipping', location: 'Yemen', lat: 15.5, lon: 48.0, severity: 3, url: null },
-  { title: 'Taiwan Strait military tensions', location: 'Taiwan Strait', lat: 24.0, lon: 119.5, severity: 2, url: null },
-  { title: 'North Korea ballistic missile program', location: 'North Korea', lat: 39.0, lon: 125.8, severity: 2, url: null },
-  { title: 'Sudan civil war - RSF conflict', location: 'Sudan', lat: 15.5, lon: 32.5, severity: 3, url: null },
-  { title: 'Iran nuclear program tensions', location: 'Iran', lat: 32.0, lon: 53.0, severity: 2, url: null },
-  { title: 'South China Sea territorial disputes', location: 'South China Sea', lat: 12.0, lon: 114.0, severity: 2, url: null },
-  { title: 'Myanmar civil war - military junta', location: 'Myanmar', lat: 19.0, lon: 96.5, severity: 3, url: null },
-  { title: 'Sahel instability - Mali/Burkina Faso', location: 'Mali', lat: 17.0, lon: -4.0, severity: 2, url: null },
+  { title: 'Ongoing Russia-Ukraine conflict', location: 'Ukraine', lat: 49.0, lon: 31.0, severity: 3, url: 'https://en.wikipedia.org/wiki/Russian_invasion_of_Ukraine', domain: 'wikipedia.org' },
+  { title: 'Gaza conflict and humanitarian situation', location: 'Gaza/Palestine', lat: 31.5, lon: 34.5, severity: 3, url: 'https://en.wikipedia.org/wiki/Gaza_war', domain: 'wikipedia.org' },
+  { title: 'Houthi attacks on Red Sea shipping', location: 'Yemen', lat: 15.5, lon: 48.0, severity: 3, url: 'https://en.wikipedia.org/wiki/Red_Sea_crisis', domain: 'wikipedia.org' },
+  { title: 'Taiwan Strait military tensions', location: 'Taiwan Strait', lat: 24.0, lon: 119.5, severity: 2, url: 'https://en.wikipedia.org/wiki/Cross-strait_relations', domain: 'wikipedia.org' },
+  { title: 'North Korea ballistic missile program', location: 'North Korea', lat: 39.0, lon: 125.8, severity: 2, url: 'https://en.wikipedia.org/wiki/North_Korea_and_weapons_of_mass_destruction', domain: 'wikipedia.org' },
+  { title: 'Sudan civil war - RSF conflict', location: 'Sudan', lat: 15.5, lon: 32.5, severity: 3, url: 'https://en.wikipedia.org/wiki/Sudanese_civil_war_(2023%E2%80%93present)', domain: 'wikipedia.org' },
+  { title: 'Iran nuclear program tensions', location: 'Iran', lat: 32.0, lon: 53.0, severity: 2, url: 'https://en.wikipedia.org/wiki/Nuclear_program_of_Iran', domain: 'wikipedia.org' },
+  { title: 'South China Sea territorial disputes', location: 'South China Sea', lat: 12.0, lon: 114.0, severity: 2, url: 'https://en.wikipedia.org/wiki/Territorial_disputes_in_the_South_China_Sea', domain: 'wikipedia.org' },
+  { title: 'Myanmar civil war - military junta', location: 'Myanmar', lat: 19.0, lon: 96.5, severity: 3, url: 'https://en.wikipedia.org/wiki/Myanmar_civil_war_(2021%E2%80%93present)', domain: 'wikipedia.org' },
+  { title: 'Sahel instability - Mali/Burkina Faso', location: 'Mali', lat: 17.0, lon: -4.0, severity: 2, url: 'https://en.wikipedia.org/wiki/Insurgency_in_the_Sahel', domain: 'wikipedia.org' },
 ];
 
 export {

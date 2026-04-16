@@ -150,7 +150,8 @@ function createGeoControllers(deps) {
     }
     if (!merged.length) return null;
     const points = adsbToHotspots(merged);
-    if (!points.length) return null;
+    // Even if zero hotspots are detected, this is still a live read.
+    // Returning empty data prevents misleading demo fallback overlays.
     return { points, source: 'adsb-derived-live' };
   }
   
