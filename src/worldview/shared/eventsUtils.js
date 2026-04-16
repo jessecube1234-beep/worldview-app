@@ -11,21 +11,26 @@ export function createEventSvgFactory() {
 export function eventKey(ev) {
     return `${ev.location || ''}|${ev.title || ''}|${Number(ev.lat).toFixed(3)}|${Number(ev.lon).toFixed(3)}`;
   }
-export function formatEventTime(seendate) {
-    if (!seendate) return '';
-    try {
-      const s = String(seendate);
-      const d = new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:00Z`);
-      if (Number.isNaN(d.getTime())) return '';
-      const deltaMs = Date.now() - d.getTime();
-      if (!Number.isFinite(deltaMs)) return '';
-      if (deltaMs < 0) return 'just now';
-      const h = Math.floor(deltaMs / 3_600_000);
-      const m = Math.floor((deltaMs % 3_600_000) / 60_000);
-      return h > 0 ? `${h}h ago` : `${m}m ago`;
-    } catch {
-      return '';
+export function parseEventDate(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (/^\d{8}T\d{6}Z$/.test(s)) {
+      const iso = `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`;
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? null : d;
     }
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+export function formatEventTime(seendate) {
+    const d = parseEventDate(seendate);
+    if (!d) return '';
+    const deltaMs = Date.now() - d.getTime();
+    if (!Number.isFinite(deltaMs)) return '';
+    if (deltaMs < 0) return 'just now';
+    const h = Math.floor(deltaMs / 3_600_000);
+    const m = Math.floor((deltaMs % 3_600_000) / 60_000);
+    return h > 0 ? `${h}h ago` : `${m}m ago`;
   }
 export function confidenceClass(confidence) {
     const label = String(confidence?.label || '').toLowerCase();

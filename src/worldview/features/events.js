@@ -22,6 +22,7 @@ export function initWorldViewEvents(deps) {
   const confidenceClass = eventUtils.confidenceClass;
   const severityLabel = eventUtils.severityLabel;
   const formatEventTimestamp = eventUtils.formatEventTimestamp;
+  const parseEventDate = eventUtils.parseEventDate;
   const normalizeTypeValue = eventUtils.normalizeTypeValue;
   const renderLoading = eventUtils.renderEventsLoading;
   const renderEmpty = eventUtils.renderEventsEmpty;
@@ -29,16 +30,17 @@ export function initWorldViewEvents(deps) {
   const desktopNotify = eventUtils.maybeDesktopNotify;
 
   function formatPublishedDate(raw) {
-    if (!raw) return 'Unknown';
-    const s = String(raw).trim();
-    if (/^\d{8}T\d{6}Z$/.test(s)) {
-      const iso = `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`;
-      const d = new Date(iso);
-      if (!Number.isNaN(d.getTime())) return d.toLocaleString();
+    const d = parseEventDate(raw);
+    return d ? d.toLocaleString() : 'Unknown';
+  }
+
+  function resolvePublishedDateRaw(ev) {
+    if (ev?.seendate) return ev.seendate;
+    if (Array.isArray(ev?.sourceLinks)) {
+      const fromSource = ev.sourceLinks.find((s) => s && s.seendate)?.seendate;
+      if (fromSource) return fromSource;
     }
-    const d = new Date(s);
-    if (!Number.isNaN(d.getTime())) return d.toLocaleString();
-    return 'Unknown';
+    return null;
   }
 
   function clearEventEntities() {
@@ -115,10 +117,11 @@ export function initWorldViewEvents(deps) {
     dom.eventDetailConfidence.textContent = ev.confidence?.score != null
       ? `${ev.confidence.score}/100 (${ev.confidence.label || 'N/A'})`
       : 'N/A';
+    const publishedRaw = resolvePublishedDateRaw(ev);
     if (dom.eventDetailPublished) {
-      dom.eventDetailPublished.textContent = formatPublishedDate(ev.seendate);
+      dom.eventDetailPublished.textContent = formatPublishedDate(publishedRaw);
     }
-    dom.eventDetailSeen.textContent = `${formatEventTime(ev.seendate) || 'Unknown'} (${formatEventTimestamp(ev.lastSeen)})`;
+    dom.eventDetailSeen.textContent = `${formatEventTime(publishedRaw) || 'Unknown'} (${formatEventTimestamp(ev.lastSeen)})`;
     const sourceLabel = Array.isArray(ev.sourceNames) && ev.sourceNames.length
       ? ev.sourceNames.join(', ')
       : (ev.domain || (ev.sourceTier === 'fallback' ? 'Fallback model' : 'Open source'));
@@ -214,7 +217,7 @@ export function initWorldViewEvents(deps) {
 
         const card = document.createElement('div');
         card.className = 'event-card';
-        const timeStr = formatEventTime(ev.seendate);
+        const timeStr = formatEventTime(resolvePublishedDateRaw(ev));
         const confClass = confidenceClass(ev.confidence);
         const confText = ev.confidence?.score != null ? `${ev.confidence.label || 'LOW'} ${ev.confidence.score}` : 'LOW 0';
         const stateLabel = String(ev.state || 'active').toUpperCase();

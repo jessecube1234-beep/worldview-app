@@ -73,7 +73,7 @@ function createGeopoliticalHandler(deps) {
         sourceLinks: cluster.sources
           .filter((s) => s.url)
           .slice(0, 3)
-          .map((s) => ({ url: s.url, domain: s.domain || s.name })),
+          .map((s) => ({ url: s.url, domain: s.domain || s.name, seendate: s.seendate || null })),
         sourceNames,
         sourcePrimary: sourceNames[0] || null,
         sourceCount,

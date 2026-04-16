@@ -73,11 +73,8 @@ function createGeoHistoryStore({ resolvedAfterMs, historyTtlMs }) {
     return bestScore >= 0.58 ? bestKey : exactKey;
   }
 
-  function effectiveEventSeenMs(rec) {
-    const sourceSeenMs = parseGdeltSeenDate(rec?.seendate)?.getTime() || 0;
-    const firstSeenMs = new Date(rec?.firstSeen || 0).getTime() || 0;
-    const ingestSeenMs = new Date(rec?.ingestedAt || 0).getTime() || 0;
-    return sourceSeenMs || firstSeenMs || ingestSeenMs || 0;
+  function publishedEventSeenMs(rec) {
+    return parseGdeltSeenDate(rec?.seendate)?.getTime() || 0;
   }
 
   function update(currentEvents, nowMs) {
@@ -167,8 +164,8 @@ function createGeoHistoryStore({ resolvedAfterMs, historyTtlMs }) {
       if (isOngoing) {
         if (String(rec.state || '').toLowerCase() === 'resolved') return false;
       } else {
-        const effectiveSeenMs = effectiveEventSeenMs(rec);
-        if (!effectiveSeenMs || effectiveSeenMs < cutoffMs) return false;
+        const publishedSeenMs = publishedEventSeenMs(rec);
+        if (!publishedSeenMs || publishedSeenMs < cutoffMs) return false;
       }
       if ((rec.severity || 1) < severityMin) return false;
       if (type !== 'all' && String(rec.eventType || '').toLowerCase() !== type) return false;
@@ -182,6 +179,8 @@ function createGeoHistoryStore({ resolvedAfterMs, historyTtlMs }) {
       if (stateDelta !== 0) return stateDelta;
       const confDelta = (b.confidence?.score || 0) - (a.confidence?.score || 0);
       if (confDelta !== 0) return confDelta;
+      const publishedDelta = publishedEventSeenMs(b) - publishedEventSeenMs(a);
+      if (publishedDelta !== 0) return publishedDelta;
       return new Date(b.lastSeen || 0).getTime() - new Date(a.lastSeen || 0).getTime();
     });
 
@@ -196,8 +195,8 @@ function createGeoHistoryStore({ resolvedAfterMs, historyTtlMs }) {
         deduped.push(rec);
         continue;
       }
-      const recSeen = effectiveEventSeenMs(rec);
-      const dupSeen = effectiveEventSeenMs(dup);
+      const recSeen = publishedEventSeenMs(rec);
+      const dupSeen = publishedEventSeenMs(dup);
       const recConf = rec.confidence?.score || 0;
       const dupConf = dup.confidence?.score || 0;
       if (recSeen > dupSeen || (recSeen === dupSeen && recConf > dupConf)) {
