@@ -103,9 +103,13 @@ export function initWorldViewEvents(deps) {
       ? `${ev.confidence.score}/100 (${ev.confidence.label || 'N/A'})`
       : 'N/A';
     dom.eventDetailSeen.textContent = `${formatEventTime(ev.seendate) || 'Unknown'} (${formatEventTimestamp(ev.lastSeen)})`;
-    dom.eventDetailSource.textContent = `${ev.sourceCount || 0} source${ev.sourceCount === 1 ? '' : 's'} | ${ev.domain || (ev.sourceTier === 'fallback' ? 'Fallback model' : 'Open source')}`;
+    const sourceLabel = Array.isArray(ev.sourceNames) && ev.sourceNames.length
+      ? ev.sourceNames.join(', ')
+      : (ev.domain || (ev.sourceTier === 'fallback' ? 'Fallback model' : 'Open source'));
+    dom.eventDetailSource.textContent = `${ev.sourceCount || 0} source${ev.sourceCount === 1 ? '' : 's'} | ${sourceLabel}`;
 
-    const link = (Array.isArray(ev.sourceLinks) && ev.sourceLinks[0]?.url) || ev.url;
+    const fallbackSearchUrl = `https://news.google.com/search?q=${encodeURIComponent(`${ev.title || ''} ${ev.location || ''}`.trim())}`;
+    const link = (Array.isArray(ev.sourceLinks) && ev.sourceLinks[0]?.url) || ev.url || fallbackSearchUrl;
     if (link) {
       dom.eventDetailLink.style.display = 'inline-block';
       dom.eventDetailLink.href = link;

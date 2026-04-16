@@ -2,9 +2,22 @@ import { GEO_SOURCES } from './constants.js';
 import { extractTag, normalizeTitleForDedupe } from './text.js';
 
 function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
+  async function fetchWithRetries(url, timeout, attempts = 2) {
+    let lastErr = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetchWithTimeout(url, { headers: HEADERS, timeout });
+        if (res.ok) return res;
+        lastErr = new Error(`HTTP ${res.status}`);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('Request failed');
+  }
+
   async function fetchRssArticles(url, sourceMeta, limit = 60) {
-    const r = await fetchWithTimeout(url, { headers: HEADERS, timeout: 9000 });
-    if (!r.ok) throw new Error(`${sourceMeta.name} ${r.status}`);
+    const r = await fetchWithRetries(url, 15000, 2);
     const xml = await r.text();
     const items = [...xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)];
     const out = [];
@@ -44,8 +57,7 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
     const results = await Promise.allSettled(
       windows.map(async (timespan) => {
         const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&maxrecords=120&format=json&timespan=${timespan}&sourcelang=English`;
-        const r = await fetchWithTimeout(url, { headers: HEADERS, timeout: 11000 });
-        if (!r.ok) throw new Error(`GDELT ${timespan} ${r.status}`);
+        const r = await fetchWithRetries(url, 18000, 2);
         const data = await r.json();
         return Array.isArray(data.articles) ? data.articles : [];
       })

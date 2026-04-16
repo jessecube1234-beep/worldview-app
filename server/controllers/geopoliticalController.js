@@ -60,6 +60,7 @@ function createGeopoliticalHandler(deps) {
         ? cluster.sources.reduce((sum, s) => sum + (s.quality || 0.5), 0) / cluster.sources.length
         : 0.5;
       const primary = cluster.sources[0] || {};
+      const sourceNames = [...new Set(cluster.sources.map((s) => s.name).filter(Boolean))];
       return normalizeGeoEvent({
         title: cluster.title,
         location: cluster.location,
@@ -73,6 +74,8 @@ function createGeopoliticalHandler(deps) {
           .filter((s) => s.url)
           .slice(0, 3)
           .map((s) => ({ url: s.url, domain: s.domain || s.name })),
+        sourceNames,
+        sourcePrimary: sourceNames[0] || null,
         sourceCount,
         sourceQuality: avgSourceQuality,
         summary: `Corroborated by ${sourceCount} source${sourceCount === 1 ? '' : 's'}. ${cluster.title}`,
