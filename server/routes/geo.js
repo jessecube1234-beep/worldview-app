@@ -2,7 +2,9 @@ function registerGeoRoutes(app, deps) {
   const { fetchWithTimeout, HEADERS, GPS_JAM_CACHE_TTL, envFallback, envValue } = deps;
   let gpsJamCache = null;
   let gpsJamCacheTime = 0;
-  const DEFAULT_GPS_JAM_URL_TEMPLATE = 'https://rfi.stanford.edu/{YYYY-MM-DD}_{type}.json';
+  const ISS_API_URL_DEFAULT = 'https://api.wheretheiss.at/v1/satellites/25544';
+  const GPS_JAM_URL_TEMPLATE_DEFAULT = 'https://rfi.stanford.edu/{YYYY-MM-DD}_{type}.json';
+  const issApiUrl = envValue('ISS_API_URL', envFallback) || ISS_API_URL_DEFAULT;
   const GPS_JAM_FALLBACK_POINTS = [
     { lat: 49.3, lon: 31.2, severity: 3, region: 'Ukraine', note: 'GNSS interference hotspot (fallback demo data)' },
     { lat: 31.6, lon: 34.6, severity: 3, region: 'Gaza/Israel', note: 'GNSS interference hotspot (fallback demo data)' },
@@ -65,7 +67,7 @@ function registerGeoRoutes(app, deps) {
   
   async function fetchGpsJamPoints() {
     const explicitUrl = envValue('GPS_JAM_URL', envFallback);
-    const templateUrl = envValue('GPS_JAM_URL_TEMPLATE', envFallback) || DEFAULT_GPS_JAM_URL_TEMPLATE;
+    const templateUrl = envValue('GPS_JAM_URL_TEMPLATE', envFallback) || GPS_JAM_URL_TEMPLATE_DEFAULT;
     const types = ['jamming', 'spoofing', 'dashboard'];
     const urls = [];
   
@@ -106,7 +108,7 @@ function registerGeoRoutes(app, deps) {
 
   app.get('/api/iss', async (_req, res) => {
     try {
-      const response = await fetchWithTimeout('https://api.wheretheiss.at/v1/satellites/25544');
+      const response = await fetchWithTimeout(issApiUrl);
       if (!response.ok) throw new Error('ISS API error');
       const data = await response.json();
       res.json(data);

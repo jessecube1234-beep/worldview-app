@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WorldView</title>
 
-  <!-- Cesium.js — 3D globe engine -->
+  <!-- Cesium.js - 3D globe engine -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet"/>
 
-  <!-- satellite.js — orbital mechanics math -->
+  <!-- satellite.js - orbital mechanics math -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
 
   <link rel="icon" href="data:,"/>
@@ -17,7 +17,7 @@
 </head>
 <body>
 
-  <!-- ── HUD Header ─────────────────────────────────── -->
+  <!-- HUD Header -->
   <header class="hud-header">
     <div class="logo">
       <span class="logo-bracket">[</span>
@@ -48,7 +48,7 @@
     </div>
   </header>
 
-  <!-- ── Control Panel ──────────────────────────────── -->
+  <!-- Control Panel -->
   <aside class="control-panel">
     <div class="panel-section">
       <div class="panel-title">LAYERS</div>
@@ -86,7 +86,7 @@
 
     <div class="panel-section">
       <div class="panel-title">FOCUS REGION</div>
-      <button class="mode-btn" data-region="world">🌍 GLOBAL</button>
+      <button class="mode-btn" data-region="world">GLOBAL</button>
       <button class="mode-btn" data-region="mideast">MIDDLE EAST</button>
       <button class="mode-btn" data-region="europe">EUROPE</button>
       <button class="mode-btn" data-region="eastasia">EAST ASIA</button>
@@ -108,7 +108,7 @@
     </div>
   </aside>
 
-  <!-- ── Geopolitical Events Panel ────────────────────── -->
+  <!-- Geopolitical Events Panel -->
   <aside class="events-panel" id="events-panel">
     <div class="panel-title">GEOPOLITICAL INTEL</div>
     <div class="events-controls">
@@ -177,28 +177,28 @@
 
   <div class="alert-toast-wrap" id="alert-toast-wrap"></div>
 
-  <!-- ── Globe ──────────────────────────────────────── -->
+  <!-- Globe -->
   <div id="cesiumContainer"></div>
 
-  <!-- ── Info Tooltip ───────────────────────────────── -->
+  <!-- Info Tooltip -->
   <div class="info-tooltip" id="info-tooltip" style="display:none">
     <div class="tooltip-title" id="tooltip-title"></div>
     <div class="tooltip-body" id="tooltip-body"></div>
   </div>
 
-  <!-- ── CCTV Modal ─────────────────────────────────── -->
+  <!-- CCTV Modal -->
   <div class="cctv-overlay" id="cctv-overlay" style="display:none">
     <div class="cctv-modal">
       <div class="cctv-header">
-        <div class="cctv-title" id="cctv-title">CITY — CCTV</div>
-        <button class="cctv-close" id="cctv-close">✕</button>
+        <div class="cctv-title" id="cctv-title">CITY - CCTV</div>
+        <button class="cctv-close" id="cctv-close">X</button>
       </div>
       <div class="cctv-meta" id="cctv-meta"></div>
       <div class="cctv-grid" id="cctv-grid">
         <div class="cctv-loading" id="cctv-loading">Loading cameras...</div>
       </div>
       <div class="cctv-footer">
-        <span id="cctv-status">—</span>
+        <span id="cctv-status">-</span>
         <a class="cctv-external" id="cctv-external" href="#" target="_blank" rel="noopener">
           Open More ->
         </a>
@@ -206,13 +206,21 @@
     </div>
   </div>
 
-  <!-- ── Status Bar ─────────────────────────────────── -->
+  <!-- Status Bar -->
   <footer class="status-bar">
     <span id="status-msg">Initializing WorldView...</span>
     <span class="status-right">Data: ADS-B Exchange | CelesTrak | WhereTheISS | TfL JamCams</span>
   </footer>
 
   <script src="/config.js"></script>
+  <script src="js/shared/spriteUtils.js"></script>
+  <script src="js/shared/labelRules.js"></script>
+  <script src="js/features/flights.js"></script>
+  <script src="js/features/space.js"></script>
+  <script src="js/features/geo.js"></script>
+  <script src="js/features/cctv.js"></script>
+  <script src="js/features/events.js"></script>
+  <script src="js/features/interactions.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
