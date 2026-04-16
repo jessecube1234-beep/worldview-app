@@ -12,6 +12,7 @@
     "dev:client": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "check:modules": "node scripts/check-modules.mjs",
     "test": "node --test",
     "lint": "eslint server tests"
   },
