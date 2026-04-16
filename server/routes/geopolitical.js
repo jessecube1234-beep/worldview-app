@@ -1,14 +1,14 @@
-function registerGeopoliticalRoutes(app, deps) {
+﻿function registerGeopoliticalRoutes(app, deps) {
   const fetchWithTimeout = deps.fetchWithTimeout;
   const HEADERS = deps.HEADERS;
 
-  // ── Geopolitical Events — GDELT news API ─────────────────────────────────────
+  //  Geopolitical Events  GDELT news API 
   let geoCache     = null;
   const GEO_HISTORY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const GEO_RESOLVED_AFTER_MS = 2 * 60 * 60 * 1000;
   const geoHistory = new Map();
   
-  // Location lookup: scan article titles for these names → map to lat/lon
+  // Location lookup: scan article titles for these names  map to lat/lon
   const LOCATION_MAP = [
     { names: ['ukraine','ukrainian','kyiv','kharkiv','zaporizhzhia','odesa','kherson','donbas','mariupol'], lat: 49.0, lon: 31.0, label: 'Ukraine' },
     { names: ['gaza','hamas','rafah','west bank','palestine','palestinian'], lat: 31.5, lon: 34.5, label: 'Gaza/Palestine' },
@@ -652,3 +652,4 @@ function registerGeopoliticalRoutes(app, deps) {
 }
 
 module.exports = { registerGeopoliticalRoutes };
+

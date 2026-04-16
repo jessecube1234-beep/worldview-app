@@ -1,10 +1,10 @@
-﻿/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   WorldView â€” app.js
-   3D globe Â· Military aircraft Â· ISS Â· Satellites Â· Country borders Â· Cities/CCTV
-   Stack: Cesium.js Â· satellite.js Â· ADS-B Exchange Â· CelesTrak Â· WhereTheISS Â· TfL
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+﻿/* 
+   WorldView  app.js
+   3D globe - Military aircraft - ISS - Satellites - Country borders - Cities/CCTV
+   Stack: Cesium.js - satellite.js - ADS-B Exchange - CelesTrak - WhereTheISS - TfL
+ */
 
-// â”€â”€ Cesium token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Cesium token 
 const cesiumToken = String(window.WORLDVIEW_CONFIG?.cesiumIonToken || '').trim();
 const hasCesiumToken = Boolean(cesiumToken);
 if (hasCesiumToken) {
@@ -13,7 +13,7 @@ if (hasCesiumToken) {
   console.warn('CESIUM_ION_TOKEN not set. Running without Cesium World Terrain.');
 }
 
-// â”€â”€ Init Viewer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Init Viewer 
 const viewer = new Cesium.Viewer('cesiumContainer', {
   terrain: hasCesiumToken ? Cesium.Terrain.fromWorldTerrain() : undefined,
   baseLayerPicker: false,
@@ -39,11 +39,11 @@ viewer.camera.flyTo({
   duration: 2,
 });
 
-// â”€â”€ Primitive collections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Primitive collections 
 const flightCollection = viewer.scene.primitives.add(new Cesium.BillboardCollection());
 const satCollection    = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
 
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  State 
 const state = {
   flightsVisible:   true,
   issVisible:       true,
@@ -65,7 +65,7 @@ const state = {
 let countryLabelUpdatePending = false;
 let countryLabelLastUpdateMs = 0;
 
-// â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  DOM refs 
 const flightCountEl  = document.getElementById('flight-count');
 const satCountEl     = document.getElementById('sat-count');
 const issAltEl       = document.getElementById('iss-alt');
@@ -77,7 +77,7 @@ const tooltip        = document.getElementById('info-tooltip');
 const tooltipTitle   = document.getElementById('tooltip-title');
 const tooltipBody    = document.getElementById('tooltip-body');
 
-// â”€â”€ UTC Clock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  UTC Clock 
 function updateClock() {
   const now = new Date();
   utcClockEl.textContent =
@@ -88,11 +88,11 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Helpers 
 function setStatus(msg) { statusMsg.textContent = msg; }
 function setLastUpdate() { lastUpdateEl.textContent = `Updated ${new Date().toLocaleTimeString()}`; }
 
-// â”€â”€ Plane SVG â€” cached by heading rounded to nearest 15Â° â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Plane SVG  cached by heading rounded to nearest 15 deg  
 const _svgCache = {};
 function planeSVG(heading) {
   const h = Math.round(heading / 15) * 15 % 360;
@@ -103,7 +103,7 @@ function planeSVG(heading) {
   return _svgCache[h];
 }
 
-// â”€â”€ Military Aircraft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Military Aircraft 
 function createLocalFlightsController() {
   let lastSnapshot = '';
   return {
@@ -173,7 +173,7 @@ const flightsController = (window.WorldViewFlights && typeof window.WorldViewFli
 async function fetchFlights() {
   return flightsController.fetchFlights();
 }
-// —— Satellite Tracking ———————————————————————————————————————————————————————————————— â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Satellite Tracking ---------------------------------------------------------------- 
 let tleData = [];
 
 async function fetchSatellites() {
@@ -213,7 +213,7 @@ function updateSatellitePositions() {
   }
 }
 
-// â”€â”€ ISS Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  ISS Tracking 
 const _issSVG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><rect x="0" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="20" y="11" width="8" height="6" fill="#ffdd57" opacity="0.85"/><rect x="8" y="10" width="12" height="8" rx="2" fill="#aee8ff"/><circle cx="14" cy="14" r="3" fill="#ffffff"/></svg>`;
   return 'data:image/svg+xml;base64,' + btoa(svg);
@@ -249,7 +249,7 @@ async function fetchISS() {
   }
 }
 
-// â”€â”€ Country Borders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Country Borders 
 
 function normalizeLonDelta(deg) {
   let d = deg;
@@ -444,7 +444,7 @@ async function loadCountryBorders() {
       strokeWidth: 1,
     });
 
-    // Disable polygon fill entirely â€” transparent fill still generates geometry
+    // Disable polygon fill entirely  transparent fill still generates geometry
     // and causes "attribute list" mismatch errors in Cesium's renderer
     for (const entity of dataSource.entities.values) {
       if (entity.polygon) {
@@ -561,7 +561,7 @@ async function loadUSStateBorders() {
   }
 }
 
-// â”€â”€ Cities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Cities 
 const US_STATE_CITIES = [
   { name: 'Birmingham',     lat: 33.5186,  lon: -86.8104,  country: 'US', cam: 'us-birmingham' },
   { name: 'Anchorage',      lat: 61.2181,  lon: -149.9003, country: 'US', cam: 'us-anchorage' },
@@ -802,7 +802,7 @@ async function fetchGpsJamming() {
   }
 }
 
-// â”€â”€ Camera globe overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Camera globe overlay 
 const _camSVG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="14" viewBox="0 0 20 14"><rect x="1" y="2" width="12" height="10" rx="2" fill="#ff6b35" opacity="0.95"/><polygon points="13,4 19,1 19,13 13,10" fill="#ff6b35" opacity="0.85"/><circle cx="7" cy="7" r="2.8" fill="#fff" opacity="0.7"/></svg>`;
   return 'data:image/svg+xml;base64,' + btoa(svg);
@@ -837,12 +837,12 @@ function plotCamerasOnGlobe(cameras) {
   viewer.scene.requestRender();
 }
 
-// â”€â”€ CCTV â€” city webcam sources (every city has staticApi or liveApi) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  CCTV  city webcam sources (every city has staticApi or liveApi) 
 const CITY_CAM_INFO = {
-  // Live APIs â€” real-time images + globe positions
+  // Live APIs  real-time images + globe positions
   london:      { label: 'London',       liveApi: '/api/cameras/london',              external: 'https://www.earthcam.com/world/england/london/' },
   singapore:   { label: 'Singapore',    liveApi: '/api/cameras/singapore',           external: 'https://onemotoring.lta.gov.sg/content/onemotoring/home/driving/traffic_information/traffic-cameras.html' },
-  // Static overlays â€” globe dots + camera grid for every other city
+  // Static overlays  globe dots + camera grid for every other city
   nyc:         { label: 'New York',     staticApi: '/api/cameras/static/nyc',        external: 'https://webcams.nyc.gov/' },
   la:          { label: 'Los Angeles',  staticApi: '/api/cameras/static/la',         external: 'https://cwwp2.dot.ca.gov/vm/streamlist.htm' },
   chicago:     { label: 'Chicago',      staticApi: '/api/cameras/static/chicago',    external: 'https://www.earthcam.com/usa/illinois/chicago/' },
@@ -942,7 +942,7 @@ async function fetchWindyCameras(lat, lon, radius = 40) {
 }
 
 
-// â”€â”€ CCTV Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  CCTV Modal 
 const cctvOverlay  = document.getElementById('cctv-overlay');
 const cctvTitle    = document.getElementById('cctv-title');
 const cctvMeta     = document.getElementById('cctv-meta');
@@ -1209,7 +1209,7 @@ function renderStaticCamCards(cams) {
   }
 }
 
-// â”€â”€ Geopolitical Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Geopolitical Events 
 const eventsListEl  = document.getElementById('events-list');
 const eventsUpdateEl = document.getElementById('events-update');
 const eventsFreshnessEl = document.getElementById('events-freshness');
@@ -1674,7 +1674,7 @@ if (eventsAlertSeverityEl) {
   });
 }
 
-// Pulsing animation â€” update entity scales every 80ms
+// Pulsing animation  update entity scales every 80ms
 setInterval(() => {
   if (!state.eventEntities.length) return;
   const t = Date.now() / 1000;
@@ -1685,7 +1685,7 @@ setInterval(() => {
   viewer.scene.requestRender();
 }, 80);
 
-// â”€â”€ Hover Tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Hover Tooltip 
 const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
 handler.setInputAction(movement => {
@@ -1738,7 +1738,7 @@ handler.setInputAction(movement => {
   }
 }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-// â”€â”€ Click handler â€” cities, camera dots, geopolitical events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Click handler  cities, camera dots, geopolitical events 
 handler.setInputAction(click => {
   const picked = viewer.scene.pick(click.position);
   if (!Cesium.defined(picked) || picked.id == null) return;
@@ -1764,7 +1764,7 @@ handler.setInputAction(click => {
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-// â”€â”€ Layer Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Layer Toggles 
 document.getElementById('toggle-flights').addEventListener('change', e => {
   state.flightsVisible = e.target.checked;
   flightCollection.show = state.flightsVisible;
@@ -1797,7 +1797,7 @@ document.getElementById('toggle-gps-jamming').addEventListener('change', e => {
   state.gpsJammingEntities.forEach(ent => { ent.show = state.gpsJammingVisible; });
 });
 
-// â”€â”€ Focus Regions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Focus Regions 
 const REGIONS = {
   world:   { lon:   0,   lat:  20,  alt: 18_000_000, label: 'Global view' },
   mideast: { lon:  42,   lat:  27,  alt:  3_500_000, label: 'Middle East' },
@@ -1819,7 +1819,7 @@ document.querySelectorAll('[data-region]').forEach(btn => {
   });
 });
 
-// â”€â”€ View Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  View Mode 
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -1853,15 +1853,15 @@ function applyViewMode(mode) {
   }
 }
 
-// â”€â”€ Refresh Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Refresh Button 
 document.getElementById('refresh-btn').addEventListener('click', loadAllData);
 
-// â”€â”€ Load All Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Load All Data 
 async function loadAllData() {
   await Promise.all([fetchFlights(), fetchISS(), fetchSatellites(), fetchGpsJamming()]);
 }
 
-// â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Boot 
 setStatus('Connecting to data sources...');
 loadCountryBorders();
 loadUSStateBorders();
@@ -1916,6 +1916,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 startPollTimers();
+
 
 
 

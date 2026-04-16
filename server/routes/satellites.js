@@ -1,4 +1,4 @@
-function registerSatelliteRoutes(app, deps) {
+ï»¿function registerSatelliteRoutes(app, deps) {
   const { path, fs, baseDir, fetch, HEADERS } = deps;
   const SAT_CACHE_FILE = path.join(baseDir, 'tle-cache.json');
 
@@ -144,7 +144,7 @@ function registerSatelliteRoutes(app, deps) {
 
     if (satCache) {
 
-      console.warn('All sources failed — serving stale cache');
+      console.warn('All sources failed - serving stale cache');
 
       return res.json(satCache);
 
@@ -229,3 +229,4 @@ function registerSatelliteRoutes(app, deps) {
 }
 
 module.exports = { registerSatelliteRoutes };
+
