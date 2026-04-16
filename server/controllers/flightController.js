@@ -1,4 +1,7 @@
 import { createFlightTracker } from '../services/flightTracker.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('flights');
 
 function createFlightsHandler(deps) {
   const tracker = createFlightTracker(deps);
@@ -9,7 +12,7 @@ function createFlightsHandler(deps) {
       if (result.stale) return res.json({ ac: result.ac, stale: true });
       return res.json({ ac: result.ac });
     } catch (err) {
-      console.error('Flight fetch error:', err.message);
+      logger.error('Flight fetch error:', err.message);
       const status = err.message === 'Flight feeds unavailable' ? 503 : 500;
       return res.status(status).json({ error: err.message });
     }

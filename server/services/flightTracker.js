@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('flight-tracker');
+
 function createFlightTracker({ fetchWithTimeout, HEADERS }) {
   const FLIGHT_CACHE_TTL = 60 * 1000;
   const ADSB_TIMEOUT_MS = 6500;
@@ -117,7 +121,7 @@ function createFlightTracker({ fetchWithTimeout, HEADERS }) {
       flightsCacheTime = now;
     }
 
-    console.log(`Tracked aircraft: ${ac.length} (mil:${milCount} ladd:${laddCount} global:${openskyAdded})`);
+    logger.info(`Tracked aircraft: ${ac.length} (mil:${milCount} ladd:${laddCount} global:${openskyAdded})`);
     return ac;
   }
 
@@ -128,7 +132,7 @@ function createFlightTracker({ fetchWithTimeout, HEADERS }) {
     if (flightsCache && !hasFreshCache) {
       if (!flightsRefreshInFlight) {
         flightsRefreshInFlight = refreshFlights(now).catch((err) => {
-          console.error('Flight background refresh error:', err.message);
+          logger.error('Flight background refresh error:', err.message);
           return null;
         }).finally(() => {
           flightsRefreshInFlight = null;

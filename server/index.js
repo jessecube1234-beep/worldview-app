@@ -13,6 +13,7 @@ import {
   GPS_JAM_CACHE_TTL,
 } from './config.js';
 import { loadEnvFallback, envValue, validateEnvironment } from './utils/env.js';
+import { createLogger } from './utils/logger.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { notFoundApi, errorHandler } from './middleware/errorHandler.js';
 import { registerFlightRoutes } from './routes/flights.js';
@@ -29,6 +30,7 @@ try {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+const logger = createLogger('server');
 
 function createApp(options = {}) {
   const app = express();
@@ -50,7 +52,7 @@ function createApp(options = {}) {
 
   const CESIUM_ION_TOKEN = envValue('CESIUM_ION_TOKEN', envFallback);
   if (!CESIUM_ION_TOKEN) {
-    console.warn('Cesium token missing (CESIUM_ION_TOKEN). Globe terrain may be limited.');
+    logger.warn('Cesium token missing (CESIUM_ION_TOKEN). Globe terrain may be limited.');
   }
 
   app.get('/config.js', (_req, res) => {
@@ -68,7 +70,7 @@ function createApp(options = {}) {
 
   const WINDY_KEY = envValue('WINDY_WEBCAMS_KEY', envFallback);
   if (!WINDY_KEY) {
-    console.warn('Windy API key missing (WINDY_WEBCAMS_KEY). /api/cameras/windy will return 503.');
+    logger.warn('Windy API key missing (WINDY_WEBCAMS_KEY). /api/cameras/windy will return 503.');
   }
 
   function fetchWithTimeout(url, opts = {}) {
@@ -118,7 +120,7 @@ function createApp(options = {}) {
 function startServer(port = PORT) {
   const app = createApp();
   return app.listen(port, () => {
-    console.log(`\nWorldView server running at http://localhost:${port}\n`);
+    logger.info(`WorldView server running at http://localhost:${port}`);
   });
 }
 

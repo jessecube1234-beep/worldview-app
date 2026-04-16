@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('geo');
+
 function createGeoControllers(deps) {
   const { fetchWithTimeout, HEADERS, GPS_JAM_CACHE_TTL, envFallback, envValue } = deps;
   let gpsJamCache = null;
@@ -113,7 +117,7 @@ function createGeoControllers(deps) {
       const data = await response.json();
       res.json(data);
     } catch (err) {
-      console.error('ISS fetch error:', err.message);
+      logger.error('ISS fetch error:', err.message);
       res.status(500).json({ error: err.message });
     }
   };
@@ -144,7 +148,7 @@ function createGeoControllers(deps) {
       };
       return res.json({ ...fallback, cached: true });
     } catch (err) {
-      console.error('GPS jamming fetch error:', err.message);
+      logger.error('GPS jamming fetch error:', err.message);
       if (gpsJamCache) return res.json({ ...gpsJamCache, cached: true });
       const empty = {
         points: [],
@@ -172,10 +176,10 @@ function createGeoControllers(deps) {
       if (!r.ok) throw new Error(`Countries GeoJSON ${r.status}`);
       countriesCache = await r.json();
       countriesTime  = now;
-      console.log('Countries GeoJSON cached.');
+      logger.info('Countries GeoJSON cached.');
       res.json(countriesCache);
     } catch (err) {
-      console.error('Countries error:', err.message);
+      logger.error('Countries error:', err.message);
       res.status(500).json({ error: err.message });
     }
   };
@@ -202,10 +206,10 @@ function createGeoControllers(deps) {
         if (!data || !Array.isArray(data.features)) continue;
         usStatesCache = data;
         usStatesTime = now;
-        console.log(`US states GeoJSON cached from ${url}.`);
+        logger.info(`US states GeoJSON cached from ${url}.`);
         return res.json(usStatesCache);
       } catch (err) {
-        console.error(`US states source failed (${url}):`, err.message);
+        logger.error(`US states source failed (${url}):`, err.message);
       }
     }
   

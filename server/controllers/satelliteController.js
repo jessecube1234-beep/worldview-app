@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('satellites');
+
 function createSatelliteControllers(deps) {
   const { path, fs, baseDir, fetch, HEADERS } = deps;
   const SAT_CACHE_DIR = path.join(baseDir, 'server', 'cache');
@@ -23,7 +27,7 @@ function createSatelliteControllers(deps) {
 
     satCacheTime = Date.now() - 3_000_000; // treat as 50 min old ? refresh within 10 min
 
-    console.log(`Loaded ${satCache.length} satellites from disk cache`);
+    logger.info(`Loaded ${satCache.length} satellites from disk cache`);
 
   } catch (_) { /* no cache yet */ }
 
@@ -59,11 +63,11 @@ function createSatelliteControllers(deps) {
 
       try {
 
-        console.log(`Trying: ${src.url}`);
+        logger.debug(`Trying source: ${src.url}`);
 
         const r = await fetch(src.url, { headers: HEADERS, timeout: 20000 });
 
-        console.log(`  ? ${r.status} ${r.statusText}`);
+        logger.debug(`${r.status} ${r.statusText || ''}`.trim());
 
         if (!r.ok) continue;
 
@@ -91,17 +95,17 @@ function createSatelliteControllers(deps) {
 
         if (sats.length > 0) {
 
-          console.log(`  ? Got ${sats.length} satellites from ${src.url}`);
+          logger.info(`Got ${sats.length} satellites from ${src.url}`);
 
           return sats;
 
         }
 
-        console.warn(`  ? Parsed 0 satellites`);
+        logger.warn(`Parsed 0 satellites from ${src.url}`);
 
       } catch (e) {
 
-        console.error(`  ? ${e.message}`);
+        logger.error(`Source failed: ${e.message}`);
 
       }
 
@@ -135,9 +139,9 @@ function createSatelliteControllers(deps) {
 
       fs.writeFile(SAT_CACHE_FILE, JSON.stringify(sats), err => {
 
-        if (err) console.error('Failed to write TLE cache:', err.message);
+        if (err) logger.error('Failed to write TLE cache:', err.message);
 
-        else console.log(`TLE cache saved to disk (${sats.length} sats)`);
+        else logger.info(`TLE cache saved to disk (${sats.length} sats)`);
 
       });
 
@@ -149,7 +153,7 @@ function createSatelliteControllers(deps) {
 
     if (satCache) {
 
-      console.warn('All sources failed - serving stale cache');
+      logger.warn('All sources failed - serving stale cache');
 
       return res.json(satCache);
 
