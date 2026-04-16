@@ -1,7 +1,7 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const express = require('express');
-const { registerGeoRoutes } = require('../server/routes/geo');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import express from 'express';
+import { registerGeoRoutes } from '../server/routes/geo.js';
 
 function createGeoApp({ fetchImpl, envMap = {} } = {}) {
   const app = express();

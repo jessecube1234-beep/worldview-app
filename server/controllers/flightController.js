@@ -1,4 +1,4 @@
-const { createFlightTracker } = require('../services/flightTracker');
+import { createFlightTracker } from '../services/flightTracker.js';
 
 function createFlightsHandler(deps) {
   const tracker = createFlightTracker(deps);
@@ -16,4 +16,4 @@ function createFlightsHandler(deps) {
   };
 }
 
-module.exports = { createFlightsHandler };
+export { createFlightsHandler };

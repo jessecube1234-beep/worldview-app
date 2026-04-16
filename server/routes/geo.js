@@ -1,4 +1,4 @@
-const { createGeoControllers } = require('../controllers/geoController');
+import { createGeoControllers } from '../controllers/geoController.js';
 
 function registerGeoRoutes(app, deps) {
   const controllers = createGeoControllers(deps);
@@ -8,4 +8,4 @@ function registerGeoRoutes(app, deps) {
   app.get('/api/us-states', controllers.usStates);
 }
 
-module.exports = { registerGeoRoutes };
+export { registerGeoRoutes };

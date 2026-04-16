@@ -1,9 +1,9 @@
-module.exports = [
+export default [
   {
     files: ['server/**/*.js', 'tests/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
         fetch: 'readonly',
         console: 'readonly',
@@ -12,10 +12,7 @@ module.exports = [
         clearTimeout: 'readonly',
         URLSearchParams: 'readonly',
         URL: 'readonly',
-        require: 'readonly',
-        module: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
+        globalThis: 'readonly',
       },
     },
     rules: {

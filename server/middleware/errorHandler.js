@@ -15,4 +15,4 @@ function errorHandler(err, _req, res, _next) {
   res.status(safeStatus).json({ error: message });
 }
 
-module.exports = { notFoundApi, errorHandler };
+export { notFoundApi, errorHandler };

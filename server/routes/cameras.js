@@ -1,4 +1,4 @@
-const { createCameraControllers } = require('../controllers/cameraController');
+import { createCameraControllers } from '../controllers/cameraController.js';
 
 function registerCameraRoutes(app, deps) {
   const controllers = createCameraControllers(deps);
@@ -9,4 +9,4 @@ function registerCameraRoutes(app, deps) {
   app.get('/api/cam-proxy', controllers.proxy);
 }
 
-module.exports = { registerCameraRoutes };
+export { registerCameraRoutes };

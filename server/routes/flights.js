@@ -1,7 +1,7 @@
-const { createFlightsHandler } = require('../controllers/flightController');
+import { createFlightsHandler } from '../controllers/flightController.js';
 
 function registerFlightRoutes(app, deps) {
   app.get('/api/flights', createFlightsHandler(deps));
 }
 
-module.exports = { registerFlightRoutes };
+export { registerFlightRoutes };

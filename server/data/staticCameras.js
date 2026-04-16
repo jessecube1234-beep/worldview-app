@@ -449,5 +449,5 @@ const STATIC_CAMERAS = {
     ],
 };
 
-module.exports = { STATIC_CAMERAS };
+export { STATIC_CAMERAS };
 

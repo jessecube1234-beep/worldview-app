@@ -1,10 +1,10 @@
-const { STATIC_CAMERAS } = require('../data/staticCameras');
-const {
+import { STATIC_CAMERAS } from '../data/staticCameras.js';
+import {
   createSingaporeHandler,
   createWindyHandler,
   createLondonHandler,
   createCamProxyHandler,
-} = require('../services/cameraHandlers');
+} from '../services/cameraHandlers.js';
 
 function createStaticCityCamerasHandler() {
   return function staticCityCamerasHandler(req, res) {
@@ -24,4 +24,4 @@ function createCameraControllers(deps) {
   };
 }
 
-module.exports = { createCameraControllers };
+export { createCameraControllers };

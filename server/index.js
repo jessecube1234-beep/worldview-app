@@ -1,30 +1,34 @@
-try {
-  // Optional in production (Elastic Beanstalk injects env vars directly).
-  require('dotenv').config();
-} catch (_) {}
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-const path = require('path');
-const fs = require('fs');
-const PROJECT_ROOT = path.resolve(__dirname, '..');
-
-const {
+import express from 'express';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
   PORT,
   HEADERS,
   TIMEOUT,
   WINDY_BASE_URLS,
   WINDY_CACHE_TTL,
   GPS_JAM_CACHE_TTL,
-} = require('./config');
-const { loadEnvFallback, envValue, validateEnvironment } = require('./utils/env');
-const { requestLogger } = require('./middleware/requestLogger');
-const { notFoundApi, errorHandler } = require('./middleware/errorHandler');
-const { registerFlightRoutes } = require('./routes/flights');
-const { registerSatelliteRoutes } = require('./routes/satellites');
-const { registerGeoRoutes } = require('./routes/geo');
-const { registerCameraRoutes } = require('./routes/cameras');
-const { registerGeopoliticalRoutes } = require('./routes/geopolitical');
+} from './config.js';
+import { loadEnvFallback, envValue, validateEnvironment } from './utils/env.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { notFoundApi, errorHandler } from './middleware/errorHandler.js';
+import { registerFlightRoutes } from './routes/flights.js';
+import { registerSatelliteRoutes } from './routes/satellites.js';
+import { registerGeoRoutes } from './routes/geo.js';
+import { registerCameraRoutes } from './routes/cameras.js';
+import { registerGeopoliticalRoutes } from './routes/geopolitical.js';
+
+try {
+  // Optional in production (Elastic Beanstalk injects env vars directly).
+  await import('dotenv/config');
+} catch (_) {}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 function createApp(options = {}) {
   const app = express();
@@ -118,8 +122,8 @@ function startServer(port = PORT) {
   });
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   startServer();
 }
 
-module.exports = { createApp, startServer };
+export { createApp, startServer };

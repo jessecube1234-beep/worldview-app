@@ -689,6 +689,6 @@ function createGeopoliticalHandler(deps) {
   
 }
 
-module.exports = { createGeopoliticalHandler };
+export { createGeopoliticalHandler };
 
 

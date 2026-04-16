@@ -216,7 +216,7 @@ function createCamProxyHandler({ fetchWithTimeout, HEADERS }) {
   };
 }
 
-module.exports = {
+export {
   createSingaporeHandler,
   createWindyHandler,
   createLondonHandler,

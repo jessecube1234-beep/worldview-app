@@ -236,6 +236,6 @@ function createSatelliteControllers(deps) {
   };
 }
 
-module.exports = { createSatelliteControllers };
+export { createSatelliteControllers };
 
 

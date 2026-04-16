@@ -2,6 +2,7 @@
   "name": "worldview-app",
   "version": "1.0.0",
   "description": "A simplified WorldView geospatial intelligence app",
+  "type": "module",
   "license": "MIT",
   "main": "server/index.js",
   "scripts": {

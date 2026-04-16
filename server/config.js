@@ -10,7 +10,7 @@ const WINDY_BASE_URLS = [
 const WINDY_CACHE_TTL = 10 * 60 * 1000;
 const GPS_JAM_CACHE_TTL = 5 * 60 * 1000;
 
-module.exports = {
+export {
   PORT,
   HEADERS,
   TIMEOUT,

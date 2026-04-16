@@ -221,5 +221,5 @@ function createGeoControllers(deps) {
   };
 }
 
-module.exports = { createGeoControllers };
+export { createGeoControllers };
 

@@ -1,4 +1,4 @@
-const { createSatelliteControllers } = require('../controllers/satelliteController');
+import { createSatelliteControllers } from '../controllers/satelliteController.js';
 
 function registerSatelliteRoutes(app, deps) {
   const controllers = createSatelliteControllers(deps);
@@ -6,4 +6,4 @@ function registerSatelliteRoutes(app, deps) {
   app.get('/api/satellites/debug', controllers.satellitesDebug);
 }
 
-module.exports = { registerSatelliteRoutes };
+export { registerSatelliteRoutes };

@@ -1,7 +1,7 @@
-const { createGeopoliticalHandler } = require('../controllers/geopoliticalController');
+import { createGeopoliticalHandler } from '../controllers/geopoliticalController.js';
 
 function registerGeopoliticalRoutes(app, deps) {
   app.get('/api/geopolitical', createGeopoliticalHandler(deps));
 }
 
-module.exports = { registerGeopoliticalRoutes };
+export { registerGeopoliticalRoutes };
