@@ -30,6 +30,8 @@ function createApp(options = {}) {
   const app = express();
   const envFallback = options.envFallback || loadEnvFallback(PROJECT_ROOT);
   validateEnvironment(envFallback);
+  const distDir = path.join(PROJECT_ROOT, 'dist');
+  const hasDistBuild = fs.existsSync(path.join(distDir, 'index.html'));
 
   app.use(cors());
   app.use((_req, res, next) => {
@@ -38,7 +40,9 @@ function createApp(options = {}) {
   });
   app.use(express.json());
   app.use(requestLogger);
-  app.use(express.static(path.join(PROJECT_ROOT, 'public')));
+  if (hasDistBuild) {
+    app.use(express.static(distDir));
+  }
 
   const CESIUM_ION_TOKEN = envValue('CESIUM_ION_TOKEN', envFallback);
   if (!CESIUM_ION_TOKEN) {
@@ -85,6 +89,21 @@ function createApp(options = {}) {
     WINDY_CACHE_TTL,
   });
   registerGeopoliticalRoutes(app, { fetchWithTimeout, HEADERS });
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      next();
+      return;
+    }
+    if (hasDistBuild) {
+      return res.sendFile(path.join(distDir, 'index.html'));
+    }
+    return res.status(503).send(
+      '<!doctype html><html><head><meta charset="utf-8"><title>WorldView</title></head><body>' +
+      '<h1>Frontend build missing</h1><p>Run <code>npm run build</code> and restart the server.</p>' +
+      '</body></html>'
+    );
+  });
 
   app.use(notFoundApi);
   app.use(errorHandler);

@@ -5,14 +5,14 @@
 
 # Dependencies
 node_modules/
+dist/
 
 # Logs
+logs/
 *.log
-server-out.log
-server-err.log
 
 # Cache files
-tle-cache.json
+server/cache/tle-cache.json
 
 # OS
 .DS_Store
