@@ -158,14 +158,27 @@ function createGeoHistoryStore({ resolvedAfterMs, historyTtlMs }) {
     const windowHours = isOngoing
       ? null
       : (timeline.endsWith('h') ? parseInt(timeline, 10) : parseInt(timeline, 10) || 168);
-    const cutoffMs = isOngoing ? null : (nowMs - Math.max(1, windowHours) * 3_600_000);
+    const upperBoundMs = isOngoing ? null : nowMs;
+    const lowerBoundMs = isOngoing ? null : (nowMs - Math.max(1, windowHours) * 3_600_000);
+
+    // Non-overlapping timeline buckets:
+    // 24H => [now-24h, now]
+    // 7D  => [now-168h, now-24h)
+    // 30D => [now-720h, now-168h)
+    function inTimelineWindow(seenMs) {
+      if (!seenMs) return false;
+      if (timeline === '24') return seenMs >= nowMs - 24 * 3_600_000 && seenMs <= nowMs;
+      if (timeline === '168') return seenMs >= nowMs - 168 * 3_600_000 && seenMs < nowMs - 24 * 3_600_000;
+      if (timeline === '720') return seenMs >= nowMs - 720 * 3_600_000 && seenMs < nowMs - 168 * 3_600_000;
+      return seenMs >= lowerBoundMs && seenMs <= upperBoundMs;
+    }
 
     const rows = [...geoHistory.values()].filter((rec) => {
       if (isOngoing) {
         if (String(rec.state || '').toLowerCase() === 'resolved') return false;
       } else {
         const publishedSeenMs = publishedEventSeenMs(rec);
-        if (!publishedSeenMs || publishedSeenMs < cutoffMs) return false;
+        if (!inTimelineWindow(publishedSeenMs)) return false;
       }
       if ((rec.severity || 1) < severityMin) return false;
       if (type !== 'all' && String(rec.eventType || '').toLowerCase() !== type) return false;
