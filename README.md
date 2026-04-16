@@ -34,6 +34,9 @@ npm start
 - `CESIUM_ION_TOKEN` (required for Cesium world terrain/imagery)
 - `GPS_JAM_URL` (optional)
 - `GPS_JAM_URL_TEMPLATE` (optional)
+- `GPS_JAM_URL_TEMPLATES` (optional comma-separated templates for fallback feeds)
+- `ISS_API_URL` (optional single ISS endpoint override)
+- `ISS_API_URLS` (optional comma-separated ISS endpoint failover list)
 - `DEMO_MODE=true` (optional strict mode; requires `WINDY_WEBCAMS_KEY` at startup)
 
 ## Project Structure

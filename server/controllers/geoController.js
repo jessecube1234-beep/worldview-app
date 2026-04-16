@@ -6,15 +6,30 @@ function createGeoControllers(deps) {
   const { fetchWithTimeout, HEADERS, GPS_JAM_CACHE_TTL, envFallback, envValue } = deps;
   let gpsJamCache = null;
   let gpsJamCacheTime = 0;
-  const ISS_API_URL_DEFAULT = 'https://api.wheretheiss.at/v1/satellites/25544';
-  const GPS_JAM_URL_TEMPLATE_DEFAULT = 'https://rfi.stanford.edu/{YYYY-MM-DD}_{type}.json';
-  const issApiUrl = envValue('ISS_API_URL', envFallback) || ISS_API_URL_DEFAULT;
+  const ISS_API_URL_DEFAULTS = [
+    'https://api.wheretheiss.at/v1/satellites/25544',
+    'http://api.open-notify.org/iss-now.json',
+  ];
+  const GPS_JAM_URL_TEMPLATE_DEFAULTS = [
+    'https://rfi.stanford.edu/{YYYY-MM-DD}_{type}.json',
+  ];
+  const ISS_API_URLS = (envValue('ISS_API_URLS', envFallback) || '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const issApiUrls = ISS_API_URLS.length
+    ? ISS_API_URLS
+    : [envValue('ISS_API_URL', envFallback), ...ISS_API_URL_DEFAULTS].filter(Boolean);
   const GPS_JAM_FALLBACK_POINTS = [
     { lat: 49.3, lon: 31.2, severity: 3, region: 'Ukraine', note: 'GNSS interference hotspot (fallback demo data)' },
     { lat: 31.6, lon: 34.6, severity: 3, region: 'Gaza/Israel', note: 'GNSS interference hotspot (fallback demo data)' },
     { lat: 15.4, lon: 47.9, severity: 2, region: 'Red Sea / Yemen', note: 'GNSS interference hotspot (fallback demo data)' },
     { lat: 24.2, lon: 119.6, severity: 2, region: 'Taiwan Strait', note: 'GNSS interference hotspot (fallback demo data)' },
     { lat: 39.9, lon: 45.1, severity: 2, region: 'South Caucasus', note: 'GNSS interference hotspot (fallback demo data)' },
+  ];
+  const GPS_JAM_ADSB_URLS = [
+    'https://api.adsb.lol/v2/ladd',
+    'https://api.adsb.lol/v2/mil',
   ];
   
   function formatUtcDate(date = new Date()) {
@@ -68,16 +83,96 @@ function createGeoControllers(deps) {
   
     return [];
   }
+
+  function parseAdsbAircraft(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload.ac)) return payload.ac;
+    if (Array.isArray(payload.aircraft)) return payload.aircraft;
+    if (Array.isArray(payload.states)) return payload.states;
+    return [];
+  }
+
+  function aircraftGpsIsDegraded(ac) {
+    const nacp = Number(ac?.nac_p ?? ac?.nacp ?? ac?.nacP);
+    const nic = Number(ac?.nic);
+    const gpsOkBefore = ac?.gpsOkBefore;
+    if (Number.isFinite(nacp) && nacp > 0 && nacp <= 5) return true;
+    if (Number.isFinite(nic) && nic > 0 && nic <= 4) return true;
+    if (gpsOkBefore) return true;
+    return false;
+  }
+
+  function adsbToHotspots(aircraft) {
+    const buckets = new Map();
+    for (const ac of aircraft) {
+      const lat = Number(ac?.lat);
+      const lon = Number(ac?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      const bLat = Math.round(lat * 2) / 2;
+      const bLon = Math.round(lon * 2) / 2;
+      const key = `${bLat}:${bLon}`;
+      if (!buckets.has(key)) {
+        buckets.set(key, { lat: bLat, lon: bLon, total: 0, bad: 0 });
+      }
+      const bucket = buckets.get(key);
+      bucket.total += 1;
+      if (aircraftGpsIsDegraded(ac)) bucket.bad += 1;
+    }
+
+    const points = [];
+    for (const bucket of buckets.values()) {
+      if (bucket.total < 8) continue;
+      const ratio = bucket.bad / bucket.total;
+      if (ratio < 0.12) continue;
+      const severity = ratio >= 0.35 ? 3 : ratio >= 0.2 ? 2 : 1;
+      points.push({
+        lat: bucket.lat,
+        lon: bucket.lon,
+        severity,
+        region: 'ADS-B GNSS anomaly cluster',
+        note: `Derived from live ADS-B quality flags (bad ${Math.round(ratio * 100)}% of ${bucket.total} aircraft)`,
+      });
+    }
+    return points.slice(0, 500);
+  }
+
+  async function fetchGpsJamFromAdsb() {
+    const merged = [];
+    for (const url of GPS_JAM_ADSB_URLS) {
+      try {
+        const r = await fetchWithTimeout(url, { headers: HEADERS, timeout: 12000 });
+        if (!r.ok) continue;
+        const data = await r.json();
+        merged.push(...parseAdsbAircraft(data));
+      } catch (_) {
+        // try next source
+      }
+    }
+    if (!merged.length) return null;
+    const points = adsbToHotspots(merged);
+    if (!points.length) return null;
+    return { points, source: 'adsb-derived-live' };
+  }
   
   async function fetchGpsJamPoints() {
     const explicitUrl = envValue('GPS_JAM_URL', envFallback);
-    const templateUrl = envValue('GPS_JAM_URL_TEMPLATE', envFallback) || GPS_JAM_URL_TEMPLATE_DEFAULT;
+    const templateValues = [
+      ...((envValue('GPS_JAM_URL_TEMPLATES', envFallback) || '')
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)),
+      envValue('GPS_JAM_URL_TEMPLATE', envFallback),
+      ...GPS_JAM_URL_TEMPLATE_DEFAULTS,
+    ].filter(Boolean);
     const types = ['jamming', 'spoofing', 'dashboard'];
     const urls = [];
+
+    const adsbResult = await fetchGpsJamFromAdsb();
+    if (adsbResult?.points?.length) return adsbResult;
   
     if (explicitUrl) urls.push(explicitUrl);
   
-    if (templateUrl) {
+    for (const templateUrl of templateValues) {
       // Support templates such as:
       // https://rfi.stanford.edu/{YYYY-MM-DD}_{type}.json
       for (let i = 0; i <= 3; i++) {
@@ -110,11 +205,45 @@ function createGeoControllers(deps) {
     return { points: GPS_JAM_FALLBACK_POINTS, source: 'fallback' };
   }
 
+  function normalizeIssPayload(data) {
+    // whereTheISS
+    if (Number.isFinite(Number(data?.latitude)) && Number.isFinite(Number(data?.longitude))) {
+      return data;
+    }
+    // open-notify
+    if (data?.iss_position?.latitude && data?.iss_position?.longitude) {
+      const latitude = Number(data.iss_position.latitude);
+      const longitude = Number(data.iss_position.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        return {
+          latitude,
+          longitude,
+          timestamp: Number(data.timestamp) || Math.floor(Date.now() / 1000),
+          source: 'open-notify',
+        };
+      }
+    }
+    return null;
+  }
+
+  async function fetchIssLive() {
+    for (const url of issApiUrls) {
+      try {
+        const response = await fetchWithTimeout(url, { headers: HEADERS, timeout: 10000 });
+        if (!response.ok) continue;
+        const data = await response.json();
+        const normalized = normalizeIssPayload(data);
+        if (normalized) return normalized;
+      } catch (_) {
+        // try next endpoint
+      }
+    }
+    throw new Error('ISS API error');
+  }
+
   const iss = async (_req, res) => {
     try {
-      const response = await fetchWithTimeout(issApiUrl);
-      if (!response.ok) throw new Error('ISS API error');
-      const data = await response.json();
+      const data = await fetchIssLive();
       res.json(data);
     } catch (err) {
       logger.error('ISS fetch error:', err.message);
@@ -162,26 +291,32 @@ function createGeoControllers(deps) {
 
   let countriesCache = null;
   let countriesTime  = 0;
+  const countriesUrls = [
+    'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson',
+    'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson',
+  ];
   
   const countries = async (_req, res) => {
     const now = Date.now();
     if (countriesCache && now - countriesTime < 86_400_000) {
       return res.json(countriesCache);
     }
-    try {
-      const r = await fetchWithTimeout(
-        'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson',
-        { headers: HEADERS, timeout: 20000 }
-      );
-      if (!r.ok) throw new Error(`Countries GeoJSON ${r.status}`);
-      countriesCache = await r.json();
-      countriesTime  = now;
-      logger.info('Countries GeoJSON cached.');
-      res.json(countriesCache);
-    } catch (err) {
-      logger.error('Countries error:', err.message);
-      res.status(500).json({ error: err.message });
+    for (const url of countriesUrls) {
+      try {
+        const r = await fetchWithTimeout(url, { headers: HEADERS, timeout: 20000 });
+        if (!r.ok) continue;
+        const data = await r.json();
+        if (!data || !Array.isArray(data.features)) continue;
+        countriesCache = data;
+        countriesTime = now;
+        logger.info(`Countries GeoJSON cached from ${url}.`);
+        return res.json(countriesCache);
+      } catch (err) {
+        logger.error(`Countries source failed (${url}):`, err.message);
+      }
     }
+    if (countriesCache) return res.json(countriesCache);
+    res.status(500).json({ error: 'Countries GeoJSON unavailable' });
   };
 
   let usStatesCache = null;
