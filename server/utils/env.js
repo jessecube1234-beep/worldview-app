@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
 
 function parseEnvFile(filePath) {
   try {
@@ -42,7 +42,7 @@ function validateEnvironment(fallback = {}) {
   );
 }
 
-module.exports = {
+export {
   parseEnvFile,
   loadEnvFallback,
   envValue,

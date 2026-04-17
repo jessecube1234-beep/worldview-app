@@ -34,30 +34,71 @@ npm start
 - `CESIUM_ION_TOKEN` (required for Cesium world terrain/imagery)
 - `GPS_JAM_URL` (optional)
 - `GPS_JAM_URL_TEMPLATE` (optional)
+- `GPS_JAM_URL_TEMPLATES` (optional comma-separated templates for fallback feeds)
+- `ISS_API_URL` (optional single ISS endpoint override)
+- `ISS_API_URLS` (optional comma-separated ISS endpoint failover list)
 - `DEMO_MODE=true` (optional strict mode; requires `WINDY_WEBCAMS_KEY` at startup)
 
 ## Project Structure
 ```text
 worldview-app/
-  server.js
   server/
+    index.js
     config.js
+    cache/
+      tle-cache.json
+    controllers/
+      cameraController.js
+      flightController.js
+    data/
+      staticCameras.js
     middleware/
       errorHandler.js
       requestLogger.js
     routes/
+      cameras.js
+      flights.js
+      geo.js
       geopolitical.js
+      satellites.js
+    services/
+      cameraHandlers.js
+      flightTracker.js
     utils/
       env.js
-  public/
-    index.html
-    style.css
-    app.js
+  logs/
+    *.log
+  src/
+    App.jsx
+    main.jsx
+    router.jsx
+    auth/
+    pages/
+      AboutPage.jsx
+      DashboardPage.jsx
+    worldview/
+      components/
+      config/
+      features/
+      hooks/
+      shared/
+      WorldViewDashboard.jsx
+  tests/
+  index.html
+  vite.config.mjs
 ```
 
+## Notes
+- Frontend runtime now lives in `src/` and is built with Vite.
+- `npm run dev` runs Vite (`5173`) and the API server (`PORT`, default `4000`) together.
+- Production server serves built frontend from `dist/`.
+
 ## Scripts
-- `npm start` - run server
-- `npm run dev` - run with nodemon
+- `npm start` - run server (serves `dist` when built)
+- `npm run dev` - run server + Vite dev client
+- `npm run build` - build frontend bundle to `dist`
+- `npm run test` - run Node test suite
+- `npm run lint` - run ESLint
 
 ## License
 MIT

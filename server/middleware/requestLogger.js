@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('api');
+
 function requestLogger(req, res, next) {
   if (!req.path.startsWith('/api/')) {
     next();
@@ -7,9 +11,9 @@ function requestLogger(req, res, next) {
   const startMs = Date.now();
   res.on('finish', () => {
     const elapsed = Date.now() - startMs;
-    console.log(`[API] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${elapsed}ms)`);
+    logger.info(`${req.method} ${req.originalUrl} -> ${res.statusCode} (${elapsed}ms)`);
   });
   next();
 }
 
-module.exports = { requestLogger };
+export { requestLogger };

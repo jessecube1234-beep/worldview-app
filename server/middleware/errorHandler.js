@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('error');
+
 function notFoundApi(req, res, next) {
   if (req.path.startsWith('/api/')) {
     res.status(404).json({ error: 'API route not found' });
@@ -11,8 +15,8 @@ function errorHandler(err, _req, res, _next) {
   const safeStatus = status >= 400 && status < 600 ? status : 500;
   const message = safeStatus >= 500 ? 'Internal server error' : (err?.message || 'Request error');
 
-  console.error('[ERROR]', err?.stack || err?.message || err);
+  logger.error(err?.stack || err?.message || err);
   res.status(safeStatus).json({ error: message });
 }
 
-module.exports = { notFoundApi, errorHandler };
+export { notFoundApi, errorHandler };
