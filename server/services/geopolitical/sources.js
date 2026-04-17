@@ -52,7 +52,22 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
   }
 
   async function fetchGdeltArticles() {
-    const q = encodeURIComponent('war attack military killed airstrike missile troops invasion conflict');
+    const q = encodeURIComponent([
+      'war',
+      'conflict',
+      'ceasefire',
+      'sanctions',
+      'missile',
+      'drone',
+      'airstrike',
+      'shelling',
+      'border clash',
+      'insurgency',
+      'military',
+      'troops',
+      'invasion',
+      'attack',
+    ].join(' OR '));
     const windows = ['24h', '168h', '720h'];
     const results = await Promise.allSettled(
       windows.map(async (timespan) => {
@@ -96,7 +111,7 @@ function createGeoSourcesClient({ fetchWithTimeout, HEADERS, logger }) {
     const results = await Promise.allSettled([
       fetchGdeltArticles(),
       fetchRssArticles('https://feeds.bbci.co.uk/news/world/rss.xml', GEO_SOURCES.bbc),
-      fetchRssArticles('https://news.google.com/rss/search?q=war+attack+missile+ceasefire+conflict&hl=en-US&gl=US&ceid=US:en', GEO_SOURCES.googlenews),
+      fetchRssArticles('https://news.google.com/rss/search?q=war+conflict+ceasefire+sanctions+missile+drone+airstrike+invasion+insurgency+troops&hl=en-US&gl=US&ceid=US:en', GEO_SOURCES.googlenews),
       fetchRssArticles('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', GEO_SOURCES.googlenews),
       fetchRssArticles('https://www.aljazeera.com/xml/rss/all.xml', { id: 'aljazeera', name: 'Al Jazeera RSS', quality: 0.72 }),
     ]);

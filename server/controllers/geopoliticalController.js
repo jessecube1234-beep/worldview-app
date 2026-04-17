@@ -3,6 +3,7 @@ import { FALLBACK_EVENTS_RAW } from '../services/geopolitical/constants.js';
 import { extractLocation, normalizeGeoEvent, scoreTitle } from '../services/geopolitical/model.js';
 import { createGeoSourcesClient } from '../services/geopolitical/sources.js';
 import { clusterGeoEvents, createGeoHistoryStore } from '../services/geopolitical/history.js';
+import { parseGdeltSeenDate } from '../services/geopolitical/text.js';
 
 const logger = createLogger('geopolitical');
 
@@ -29,6 +30,55 @@ function createGeopoliticalHandler(deps) {
   const fallbackEvents = FALLBACK_EVENTS_RAW.map((event) =>
     normalizeGeoEvent(event, { fallback: true })
   );
+
+  function eventAgeHours(event, nowMs) {
+    const seenMs = parseGdeltSeenDate(event?.seendate)?.getTime() || 0;
+    if (!seenMs) return Number.POSITIVE_INFINITY;
+    return Math.max(0, (nowMs - seenMs) / 3_600_000);
+  }
+
+  function selectBalancedTimelineEvents(events, nowMs, limit = 60) {
+    const sorted = [...events].sort((a, b) => {
+      const confDelta = (b.confidence?.score || 0) - (a.confidence?.score || 0);
+      if (confDelta !== 0) return confDelta;
+      const aSeen = parseGdeltSeenDate(a?.seendate)?.getTime() || 0;
+      const bSeen = parseGdeltSeenDate(b?.seendate)?.getTime() || 0;
+      return bSeen - aSeen;
+    });
+
+    const bucket24 = sorted.filter((e) => eventAgeHours(e, nowMs) <= 24);
+    const bucket7d = sorted.filter((e) => {
+      const age = eventAgeHours(e, nowMs);
+      return age > 24 && age <= 168;
+    });
+    const bucket30d = sorted.filter((e) => {
+      const age = eventAgeHours(e, nowMs);
+      return age > 168 && age <= 720;
+    });
+    const remainder = sorted.filter((e) => eventAgeHours(e, nowMs) > 720 || !Number.isFinite(eventAgeHours(e, nowMs)));
+
+    const selected = [];
+    const seen = new Set();
+    const pushMany = (arr, n) => {
+      for (const item of arr) {
+        if (selected.length >= limit || n <= 0) break;
+        const key = `${item.location || ''}|${item.title || ''}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        selected.push(item);
+        n--;
+      }
+    };
+
+    // Keep coverage across timeframes so 7D is not starved by confidence-only ranking.
+    pushMany(bucket24, 8);
+    pushMany(bucket7d, 8);
+    pushMany(bucket30d, 4);
+    if (selected.length < limit) pushMany(sorted, limit - selected.length);
+    if (selected.length < limit) pushMany(remainder, limit - selected.length);
+
+    return selected.slice(0, limit);
+  }
 
   async function refreshGeoCache() {
     const now = Date.now();
@@ -82,20 +132,19 @@ function createGeopoliticalHandler(deps) {
       });
     });
 
-    events.sort((a, b) => (b.confidence?.score || 0) - (a.confidence?.score || 0));
-    const top20 = events.slice(0, 20);
+    const topEvents = selectBalancedTimelineEvents(events, now, 60);
 
-    if (allowDemoPadding && top20.length > 0 && top20.length < 5) {
+    if (allowDemoPadding && topEvents.length > 0 && topEvents.length < 5) {
       for (const fallback of fallbackEvents) {
-        if (top20.length >= 10) break;
-        if (!top20.some((e) => e.location === fallback.location)) top20.push(fallback);
+        if (topEvents.length >= 10) break;
+        if (!topEvents.some((e) => e.location === fallback.location)) topEvents.push(fallback);
       }
     }
 
-    geoCache = top20;
+    geoCache = topEvents;
     geoCacheFetchedAt = now;
     geoCacheSource = 'live';
-    history.update(top20, now);
+    history.update(topEvents, now);
     logger.info(`Cache refreshed: ${events.length} clustered from ${candidates.length} raw articles`);
   }
 
