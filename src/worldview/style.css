@@ -222,6 +222,11 @@ html, body {
 }
 .status-right { color: rgba(0,255,157,0.3); }
 
+.mobile-panel-dock,
+.mobile-panel-backdrop {
+  display: none;
+}
+
 /*  CCTV Modal Overlay  */
 .cctv-overlay {
   position: fixed;
@@ -882,26 +887,66 @@ html, body {
     letter-spacing: 0.04em;
   }
 
+  .mobile-panel-dock {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    z-index: 45;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mobile-panel-btn {
+    border: 1px solid var(--green-dim);
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.13em;
+    padding: 9px 10px;
+    border-radius: 4px;
+    backdrop-filter: blur(8px);
+  }
+
+  .mobile-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 32;
+    border: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
   .control-panel {
     top: 56px;
     left: 10px;
     right: 10px;
     width: auto;
-    max-height: 34vh;
+    max-height: 68vh;
     padding: 10px;
     gap: 12px;
-    z-index: 30;
+    z-index: 35;
+    transform: translateY(-105%);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
   .events-panel {
     left: 10px;
     right: 10px;
-    bottom: 10px;
     top: auto;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     width: auto;
-    max-height: 42vh;
+    max-height: 62vh;
     padding: 10px;
-    z-index: 40;
+    z-index: 35;
+    transform: translateY(120%);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
   .events-control-row {
@@ -935,6 +980,27 @@ html, body {
     top: 56px;
     max-height: 52vh;
     padding: 10px;
+  }
+
+  body.mobile-open-control .control-panel {
+    transform: translateY(0);
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.mobile-open-events .events-panel {
+    transform: translateY(0);
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.mobile-open-control .mobile-panel-backdrop,
+  body.mobile-open-events .mobile-panel-backdrop {
+    display: block;
+  }
+  body.mobile-open-control .mobile-panel-dock,
+  body.mobile-open-events .mobile-panel-dock {
+    z-index: 46;
   }
 }
 

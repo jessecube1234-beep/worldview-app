@@ -15,6 +15,11 @@ export function WorldViewDashboard() {
   return (
     <>
       <HudHeader />
+      <div className="mobile-panel-dock" id="mobile-panel-dock">
+        <button className="mobile-panel-btn" id="mobile-layers-btn" type="button">LAYERS</button>
+        <button className="mobile-panel-btn" id="mobile-events-btn" type="button">EVENTS</button>
+      </div>
+      <button className="mobile-panel-backdrop" id="mobile-panel-backdrop" type="button" aria-label="Close panels" />
       <ControlPanel />
       <EventsPanel />
       <EventDetailPanel />
