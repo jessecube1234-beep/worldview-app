@@ -222,6 +222,11 @@ html, body {
 }
 .status-right { color: rgba(0,255,157,0.3); }
 
+.mobile-panel-dock,
+.mobile-panel-backdrop {
+  display: none;
+}
+
 /*  CCTV Modal Overlay  */
 .cctv-overlay {
   position: fixed;
@@ -862,6 +867,142 @@ html, body {
   }
 }
 
+@media (max-width: 920px) {
+  .hud-header {
+    height: 48px;
+    padding: 0 10px;
+  }
+  .logo {
+    font-size: 0.95rem;
+    letter-spacing: 0.16em;
+  }
+  .hud-stats {
+    gap: 10px;
+  }
+  .stat-label {
+    display: none;
+  }
+  .stat-value {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .mobile-panel-dock {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    z-index: 45;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mobile-panel-btn {
+    border: 1px solid var(--green-dim);
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.13em;
+    padding: 9px 10px;
+    border-radius: 4px;
+    backdrop-filter: blur(8px);
+  }
+
+  .mobile-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 32;
+    border: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .control-panel {
+    top: 56px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: 68vh;
+    padding: 10px;
+    gap: 12px;
+    z-index: 35;
+    transform: translateY(-105%);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .events-panel {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 62vh;
+    padding: 10px;
+    z-index: 35;
+    transform: translateY(120%);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .events-control-row {
+    gap: 4px;
+  }
+  .events-control-row select,
+  .events-timeline,
+  .events-alert-toggle {
+    font-size: 0.5rem;
+    padding: 5px 4px;
+  }
+
+  .event-card {
+    padding: 6px 7px;
+  }
+  .event-location {
+    font-size: 0.6rem;
+  }
+  .event-title {
+    font-size: 0.55rem;
+    line-height: 1.35;
+  }
+  .event-source {
+    font-size: 0.48rem;
+  }
+
+  .event-detail-panel {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: 56px;
+    max-height: 52vh;
+    padding: 10px;
+  }
+
+  body.mobile-open-control .control-panel {
+    transform: translateY(0);
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.mobile-open-events .events-panel {
+    transform: translateY(0);
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.mobile-open-control .mobile-panel-backdrop,
+  body.mobile-open-events .mobile-panel-backdrop {
+    display: block;
+  }
+  body.mobile-open-control .mobile-panel-dock,
+  body.mobile-open-events .mobile-panel-dock {
+    z-index: 46;
+  }
+}
 /*  Cesium UI overrides  */
 .cesium-widget-credits,
 .cesium-viewer-toolbar,

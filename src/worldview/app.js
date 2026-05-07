@@ -169,6 +169,58 @@ export function initWorldViewApp() {
   });
 
   const cleanupFns = [];
+  const mobileLayersBtn = document.getElementById('mobile-layers-btn');
+  const mobileEventsBtn = document.getElementById('mobile-events-btn');
+  const mobileBackdropBtn = document.getElementById('mobile-panel-backdrop');
+
+  function setMobilePanel(panel) {
+    const root = document.body;
+    root.classList.remove('mobile-open-control', 'mobile-open-events');
+    if (panel === 'control') root.classList.add('mobile-open-control');
+    if (panel === 'events') root.classList.add('mobile-open-events');
+  }
+
+  function closeMobilePanels() {
+    setMobilePanel(null);
+  }
+
+  // Always start mobile UI in a collapsed state.
+  closeMobilePanels();
+
+  if (mobileLayersBtn) {
+    const onClick = () => {
+      const open = document.body.classList.contains('mobile-open-control');
+      setMobilePanel(open ? null : 'control');
+    };
+    mobileLayersBtn.addEventListener('click', onClick);
+    cleanupFns.push(() => mobileLayersBtn.removeEventListener('click', onClick));
+  }
+
+  if (mobileEventsBtn) {
+    const onClick = () => {
+      const open = document.body.classList.contains('mobile-open-events');
+      setMobilePanel(open ? null : 'events');
+    };
+    mobileEventsBtn.addEventListener('click', onClick);
+    cleanupFns.push(() => mobileEventsBtn.removeEventListener('click', onClick));
+  }
+
+  if (mobileBackdropBtn) {
+    mobileBackdropBtn.addEventListener('click', closeMobilePanels);
+    cleanupFns.push(() => mobileBackdropBtn.removeEventListener('click', closeMobilePanels));
+  }
+
+  const mobileMq = window.matchMedia('(min-width: 921px)');
+  const handleDesktop = () => {
+    if (mobileMq.matches) closeMobilePanels();
+  };
+  if (mobileMq.addEventListener) {
+    mobileMq.addEventListener('change', handleDesktop);
+    cleanupFns.push(() => mobileMq.removeEventListener('change', handleDesktop));
+  } else if (mobileMq.addListener) {
+    mobileMq.addListener(handleDesktop);
+    cleanupFns.push(() => mobileMq.removeListener(handleDesktop));
+  }
 
   function bindToggle(id, onChange) {
     const element = document.getElementById(id);

@@ -29,6 +29,10 @@ export function initWorldViewGeo(deps) {
 
   async function loadCountryBorders() {
     try {
+      if (!viewer?.dataSources?.add) {
+        console.warn('Country borders skipped: viewer dataSources not ready.');
+        return;
+      }
       const countriesGeoJson = await fetchCountriesGeoJson();
 
       const dataSource = await Cesium.GeoJsonDataSource.load(countriesGeoJson, {
@@ -120,6 +124,10 @@ export function initWorldViewGeo(deps) {
 
   async function loadUSStateBorders() {
     try {
+      if (!viewer?.dataSources?.add) {
+        console.warn('US state borders skipped: viewer dataSources not ready.');
+        return;
+      }
       const dataSource = await loadUSStatesDataSource(Cesium);
 
       for (const entity of dataSource.entities.values) {
