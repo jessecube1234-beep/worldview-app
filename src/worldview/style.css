@@ -862,6 +862,82 @@ html, body {
   }
 }
 
+@media (max-width: 768px) {
+  .hud-header {
+    height: 48px;
+    padding: 0 10px;
+  }
+  .logo {
+    font-size: 0.95rem;
+    letter-spacing: 0.16em;
+  }
+  .hud-stats {
+    gap: 10px;
+  }
+  .stat-label {
+    display: none;
+  }
+  .stat-value {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .control-panel {
+    top: 56px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: 36vh;
+    padding: 10px;
+    gap: 12px;
+    z-index: 30;
+  }
+
+  .events-panel {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    top: auto;
+    width: auto;
+    max-height: 40vh;
+    padding: 10px;
+    z-index: 40;
+  }
+
+  .events-control-row {
+    gap: 4px;
+  }
+  .events-control-row select,
+  .events-timeline,
+  .events-alert-toggle {
+    font-size: 0.5rem;
+    padding: 5px 4px;
+  }
+
+  .event-card {
+    padding: 6px 7px;
+  }
+  .event-location {
+    font-size: 0.6rem;
+  }
+  .event-title {
+    font-size: 0.55rem;
+    line-height: 1.35;
+  }
+  .event-source {
+    font-size: 0.48rem;
+  }
+
+  .event-detail-panel {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: 56px;
+    max-height: 44vh;
+    padding: 10px;
+  }
+}
+
 /*  Cesium UI overrides  */
 .cesium-widget-credits,
 .cesium-viewer-toolbar,
